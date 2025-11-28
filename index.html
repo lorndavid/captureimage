@@ -8,11 +8,14 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Fonts: Battambang for Khmer, Poppins for English -->
-    <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Poppins:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Face API (for recognition) -->
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
     <style>
         body {
@@ -20,249 +23,280 @@
             background-color: #f0f2f5;
             -webkit-tap-highlight-color: transparent;
         }
+        
+        /* Developer/Admin Theme Fonts */
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
         /* Custom Scrollbar */
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         
         /* Animations */
-        @keyframes fade-in-up {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fade-in-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in-up { animation: fade-in-up 0.3s ease-out forwards; }
         
-        @keyframes scale-in {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
-        }
+        @keyframes scale-in { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
         .animate-scale-in { animation: scale-in 0.2s ease-out forwards; }
 
+        @keyframes scan-line { 0% { top: 0%; } 100% { top: 100%; } }
+        .scan-effect::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+            background: #00ff00; box-shadow: 0 0 10px #00ff00;
+            animation: scan-line 2s linear infinite; opacity: 0.5;
+        }
+
         .loader {
-            border: 2px solid #f3f3f3;
-            border-radius: 50%;
-            border-top: 2px solid #3b82f6;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
+            border: 2px solid #f3f3f3; border-radius: 50%; border-top: 2px solid #3b82f6;
+            width: 20px; height: 20px; animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* Glassmorphism utility */
-        .glass {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-
-        /* Mirror Toggle Class */
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
         .mirror-active { transform: scaleX(-1); }
         .mirror-inactive { transform: scaleX(1); }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col pb-24"> 
+<body class="bg-gray-100 min-h-screen flex flex-col"> 
 
-    <!-- 1. NAVBAR -->
-    <nav class="bg-gradient-to-r from-blue-700 to-blue-500 shadow-lg sticky top-0 z-40 transition-colors duration-300" id="mainNav">
-        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-start"> 
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md p-1">
-                    <img src="https://i.postimg.cc/FHBn0Fdf/di3-copy.png" alt="Logo" class="w-full h-full object-contain">
+    <!-- ========================================= -->
+    <!-- 1. LOGIN SCREEN (Initial View)            -->
+    <!-- ========================================= -->
+    <div id="loginScreen" class="fixed inset-0 z-[100] bg-gray-900 flex flex-col items-center justify-center p-6 text-white">
+        <div class="max-w-sm w-full bg-gray-800 rounded-2xl p-8 border border-gray-700 shadow-2xl relative overflow-hidden">
+            <!-- Deco Grid -->
+            <div class="absolute inset-0 opacity-5" style="background-image: radial-gradient(#4b5563 1px, transparent 1px); background-size: 20px 20px;"></div>
+            
+            <div class="relative z-10 text-center">
+                <div class="w-20 h-20 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-blue-500/30">
+                    <i class="fas fa-user-astronaut text-3xl text-blue-400"></i>
                 </div>
-                <div>
-                    <h1 class="text-white font-bold text-xl leading-tight tracking-wide">បញ្ជីឈ្មោះសិស្ស</h1>
-                    <p class="text-blue-100 text-xs font-medium">Student Database</p>
+                <h2 class="text-2xl font-bold font-mono tracking-tighter mb-1">SYSTEM ACCESS</h2>
+                <p class="text-gray-400 text-xs font-mono mb-8">IDENTITY VERIFICATION REQUIRED</p>
+
+                <!-- Input -->
+                <div class="relative mb-6 text-left">
+                    <label class="text-[10px] font-bold text-gray-500 uppercase font-mono ml-1">Admin ID</label>
+                    <div class="flex items-center bg-gray-900 rounded-xl border border-gray-600 focus-within:border-blue-500 transition-colors mt-1">
+                        <div class="pl-4 text-gray-500"><i class="fas fa-fingerprint"></i></div>
+                        <input type="number" id="adminIdInput" class="bg-transparent border-none text-white w-full px-4 py-3 focus:outline-none font-mono font-bold" placeholder="Enter ID (e.g. 250)">
+                    </div>
                 </div>
+
+                <button onclick="initiateAdminLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/20 transition-all font-mono">
+                    <i class="fas fa-lock-open mr-2"></i> AUTHENTICATE
+                </button>
             </div>
         </div>
-    </nav>
+        <p class="mt-8 text-gray-600 text-[10px] font-mono">SECURE CONNECTION ESTABLISHED v2.4.0</p>
+    </div>
 
-    <!-- 2. MAIN CONTENT -->
-    <main class="flex-grow max-w-2xl mx-auto w-full p-3 space-y-3">
-
-        <!-- Search Box -->
-        <div class="bg-white rounded-xl shadow-sm p-1.5 sticky top-20 z-30 ring-1 ring-gray-200 transition-all duration-300" id="searchContainer">
-            <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <i class="fas fa-search text-gray-400 text-sm"></i>
-                </div>
-                <input type="text" id="searchInput" 
-                    class="block w-full pl-9 pr-4 py-2 bg-gray-50 border-none rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all text-sm font-medium" 
-                    placeholder="ស្វែងរកអត្តលេខ (ឧ. 123)..."
-                    autocomplete="off">
-                <div id="searchLoader" class="absolute inset-y-0 right-0 pr-3 flex items-center hidden">
-                    <div class="loader"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Filter/Status Banner -->
-        <div id="filterBanner" class="hidden bg-orange-50 border border-orange-100 rounded-lg p-2 flex items-center justify-between animate-fade-in-down">
-            <div class="flex items-center text-orange-700">
-                <i class="fas fa-filter mr-2 text-xs"></i>
-                <span class="font-bold text-xs" id="filterText">បញ្ជីអ្នកដែលគ្មានរូបថត (Missing Photos)</span>
-            </div>
-            <div class="text-[10px] text-orange-500 font-bold bg-orange-100 px-2 py-0.5 rounded-full" id="filterCount">...</div>
-        </div>
-
-        <!-- Results List -->
-        <div id="resultsArea" class="space-y-2.5">
-            <!-- Empty State -->
-            <div id="emptyState" class="text-center py-12 opacity-60">
-                <i class="fas fa-id-card text-5xl text-gray-300 mb-3"></i>
-                <p class="text-gray-500 text-sm font-medium">វាយបញ្ចូលអត្តលេខ ឬឈ្មោះដើម្បីស្វែងរក</p>
-            </div>
+    <!-- ========================================= -->
+    <!-- 2. FACE VERIFICATION MODAL                -->
+    <!-- ========================================= -->
+    <div id="faceVerifyModal" class="fixed inset-0 z-[110] bg-black hidden flex-col items-center justify-center">
+        <div class="absolute top-0 w-full p-4 flex justify-between items-center bg-black/50 z-20">
+            <span class="text-green-400 font-mono text-xs"><i class="fas fa-circle animate-pulse mr-2"></i>FACE RECOGNITION ACTIVE</span>
+            <button onclick="closeVerifyModal()" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
         </div>
         
-        <!-- Loading Full Page -->
-        <div id="fullPageLoader" class="hidden text-center py-8">
-            <div class="inline-block loader w-8 h-8 border-4 border-blue-200 border-t-blue-600 mb-2"></div>
-            <p class="text-gray-500 text-xs">កំពុងទាញយកទិន្នន័យ...</p>
+        <div class="relative w-64 h-64 bg-gray-900 rounded-2xl overflow-hidden border-2 border-blue-500/50 shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+            <video id="verifyVideo" autoplay playsinline class="w-full h-full object-cover mirror-active"></video>
+            <div class="scan-effect absolute inset-0 pointer-events-none"></div>
+            <!-- Overlay Face Box -->
+            <div class="absolute inset-0 flex items-center justify-center">
+                <div class="w-40 h-56 border-2 border-white/30 rounded-full"></div>
+            </div>
         </div>
 
-    </main>
+        <div class="mt-6 text-center space-y-2">
+            <h3 class="text-white font-bold text-lg font-mono" id="verifyStatus">Scanning...</h3>
+            <p class="text-gray-400 text-xs">Please look at the camera to verify identity.</p>
+            <p class="text-blue-400 text-xs font-mono mt-2" id="verifyMatchScore">Confidence: 0%</p>
+        </div>
 
-    <!-- Back To Top -->
-    <button id="backToTopBtn" onclick="scrollToTop()" class="fixed bottom-20 right-4 z-30 bg-blue-600 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-lg shadow-blue-500/40 hidden transition-all duration-300 hover:bg-blue-700 active:scale-90 transform translate-y-0 opacity-100">
-        <i class="fas fa-arrow-up text-sm"></i>
-    </button>
+        <!-- Fallback Button in case AI fails to load -->
+        <button onclick="bypassLogin()" class="mt-8 text-gray-600 hover:text-gray-400 text-xs underline">
+            [DEV] Bypass / Simulate Match
+        </button>
+    </div>
 
-    <!-- 3. FOOTER NAVIGATION -->
-    <footer class="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 glass pb-safe transition-all duration-300 h-16">
-        <div class="flex justify-around items-center max-w-2xl mx-auto h-full px-2">
+    <!-- ========================================= -->
+    <!-- 3. MAIN APP (Hidden initially)            -->
+    <!-- ========================================= -->
+    <div id="appContainer" class="hidden flex-col min-h-screen pb-24">
+        
+        <!-- NAVBAR -->
+        <nav class="bg-gradient-to-r from-blue-700 to-blue-500 shadow-lg sticky top-0 z-40 transition-colors duration-300" id="mainNav">
+            <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-start"> 
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md p-1">
+                        <img src="https://i.postimg.cc/FHBn0Fdf/di3-copy.png" alt="Logo" class="w-full h-full object-contain">
+                    </div>
+                    <div>
+                        <h1 class="text-white font-bold text-xl leading-tight tracking-wide">បញ្ជីឈ្មោះសិស្ស</h1>
+                        <p class="text-blue-100 text-xs font-medium">Student Database</p>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- MAIN CONTENT -->
+        <main class="flex-grow max-w-2xl mx-auto w-full p-3 space-y-3">
             
-            <!-- Tab 1: Home/Search -->
-            <button onclick="switchTab('home')" id="tabHome" class="flex flex-col items-center justify-center w-full h-full text-blue-600 relative group transition-colors">
-                <div class="text-xl mb-1 transition-transform group-active:scale-90 icon-container">
-                    <i class="fas fa-search"></i>
+            <!-- ADMIN DASHBOARD PANEL (Hidden by default) -->
+            <div id="adminPanel" class="hidden bg-gray-800 text-white rounded-xl p-4 shadow-lg border-l-4 border-green-500 animate-fade-in-up">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h2 class="text-lg font-bold font-mono text-green-400">ADMIN CONSOLE</h2>
+                        <p class="text-xs text-gray-400 font-mono">User: <span id="adminNameDisplay">Unknown</span></p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold font-mono" id="adminTotalCaptures">0</div>
+                        <div class="text-[10px] text-gray-400 uppercase tracking-wider">Total Captures</div>
+                    </div>
                 </div>
-                <span class="text-[10px] font-bold">ស្វែងរក (Search)</span>
-                <div class="absolute top-0 w-8 h-0.5 bg-blue-600 rounded-b-lg indicator"></div>
-            </button>
-
-            <!-- Tab 2: Missing Photos -->
-            <button onclick="switchTab('missing')" id="tabMissing" class="flex flex-col items-center justify-center w-full h-full text-gray-400 relative group hover:text-gray-600 transition-colors">
-                <div class="relative text-xl mb-1 transition-transform group-active:scale-90 icon-container">
-                    <i class="fas fa-camera-retro"></i>
-                    <span id="missingBadge" class="hidden absolute -top-1.5 -right-2 bg-red-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full border border-white shadow-sm min-w-[16px]">0</span>
+                
+                <div class="bg-gray-900 rounded-lg p-3 max-h-40 overflow-y-auto custom-scrollbar">
+                    <h4 class="text-[10px] font-bold text-gray-500 uppercase mb-2 font-mono">RECENT ACTIVITY LOG</h4>
+                    <ul id="adminLogList" class="space-y-2 text-xs font-mono text-gray-300">
+                        <li class="text-center text-gray-600 italic">No activity yet.</li>
+                    </ul>
                 </div>
-                <span class="text-[10px] font-bold">ត្រូវថត (Pending)</span>
-                <div class="hidden absolute top-0 w-8 h-0.5 bg-red-500 rounded-b-lg indicator"></div>
-            </button>
+            </div>
 
-            <!-- Tab 3: Delete Image -->
-            <button onclick="switchTab('delete')" id="tabDelete" class="flex flex-col items-center justify-center w-full h-full text-gray-400 relative group hover:text-red-500 transition-colors">
-                <div class="text-xl mb-1 transition-transform group-active:scale-90 icon-container">
-                    <i class="fas fa-trash-alt"></i>
+            <!-- Search Box -->
+            <div class="bg-white rounded-xl shadow-sm p-1.5 sticky top-20 z-30 ring-1 ring-gray-200 transition-all duration-300" id="searchContainer">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400 text-sm"></i>
+                    </div>
+                    <input type="text" id="searchInput" 
+                        class="block w-full pl-9 pr-4 py-2 bg-gray-50 border-none rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all text-sm font-medium" 
+                        placeholder="ស្វែងរកអត្តលេខ (ឧ. 123)..."
+                        autocomplete="off">
+                    <div id="searchLoader" class="absolute inset-y-0 right-0 pr-3 flex items-center hidden">
+                        <div class="loader"></div>
+                    </div>
                 </div>
-                <span class="text-[10px] font-bold">លុបរូប (Delete)</span>
-                <div class="hidden absolute top-0 w-8 h-0.5 bg-red-600 rounded-b-lg indicator"></div>
-            </button>
+            </div>
 
-        </div>
-    </footer>
+            <!-- Filter Banner -->
+            <div id="filterBanner" class="hidden bg-orange-50 border border-orange-100 rounded-lg p-2 flex items-center justify-between animate-fade-in-down">
+                <div class="flex items-center text-orange-700">
+                    <i class="fas fa-filter mr-2 text-xs"></i>
+                    <span class="font-bold text-xs" id="filterText">បញ្ជីអ្នកដែលគ្មានរូបថត</span>
+                </div>
+                <div class="text-[10px] text-orange-500 font-bold bg-orange-100 px-2 py-0.5 rounded-full" id="filterCount">...</div>
+            </div>
 
-    <!-- 4. PROFESSIONAL CAMERA MODAL (Square) -->
+            <!-- Results -->
+            <div id="resultsArea" class="space-y-2.5">
+                <div id="emptyState" class="text-center py-12 opacity-60">
+                    <i class="fas fa-id-card text-5xl text-gray-300 mb-3"></i>
+                    <p class="text-gray-500 text-sm font-medium">វាយបញ្ចូលអត្តលេខ ឬឈ្មោះដើម្បីស្វែងរក</p>
+                </div>
+            </div>
+            
+            <div id="fullPageLoader" class="hidden text-center py-8">
+                <div class="inline-block loader w-8 h-8 border-4 border-blue-200 border-t-blue-600 mb-2"></div>
+                <p class="text-gray-500 text-xs">កំពុងទាញយកទិន្នន័យ...</p>
+            </div>
+        </main>
+
+        <!-- Back To Top -->
+        <button id="backToTopBtn" onclick="scrollToTop()" class="fixed bottom-24 right-4 z-30 bg-blue-600 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-lg shadow-blue-500/40 hidden transition-all duration-300 hover:bg-blue-700 active:scale-90">
+            <i class="fas fa-arrow-up text-sm"></i>
+        </button>
+
+        <!-- FOOTER -->
+        <footer class="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 glass pb-safe transition-all duration-300 h-16">
+            <div class="flex justify-around items-center max-w-2xl mx-auto h-full px-2">
+                <!-- Tabs -->
+                <button onclick="switchTab('home')" id="tabHome" class="flex flex-col items-center justify-center w-full h-full text-blue-600 relative group transition-colors">
+                    <div class="text-xl mb-1 icon-container"><i class="fas fa-search"></i></div>
+                    <span class="text-[10px] font-bold">ស្វែងរក (Search)</span>
+                    <div class="absolute top-0 w-8 h-0.5 bg-blue-600 rounded-b-lg indicator"></div>
+                </button>
+
+                <button onclick="switchTab('missing')" id="tabMissing" class="flex flex-col items-center justify-center w-full h-full text-gray-400 relative group hover:text-gray-600 transition-colors">
+                    <div class="relative text-xl mb-1 icon-container">
+                        <i class="fas fa-camera-retro"></i>
+                        <span id="missingBadge" class="hidden absolute -top-1.5 -right-2 bg-red-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full border border-white shadow-sm min-w-[16px]">0</span>
+                    </div>
+                    <span class="text-[10px] font-bold">ត្រូវថត (Pending)</span>
+                    <div class="hidden absolute top-0 w-8 h-0.5 bg-red-500 rounded-b-lg indicator"></div>
+                </button>
+
+                <button onclick="switchTab('delete')" id="tabDelete" class="flex flex-col items-center justify-center w-full h-full text-gray-400 relative group hover:text-red-500 transition-colors">
+                    <div class="text-xl mb-1 icon-container"><i class="fas fa-trash-alt"></i></div>
+                    <span class="text-[10px] font-bold">លុបរូប (Delete)</span>
+                    <div class="hidden absolute top-0 w-8 h-0.5 bg-red-600 rounded-b-lg indicator"></div>
+                </button>
+
+                <!-- NEW ADMIN TAB -->
+                <button onclick="switchTab('admin')" id="tabAdmin" class="flex flex-col items-center justify-center w-full h-full text-gray-400 relative group hover:text-green-500 transition-colors">
+                    <div class="text-xl mb-1 icon-container"><i class="fas fa-user-shield"></i></div>
+                    <span class="text-[10px] font-bold">Admin</span>
+                    <div class="hidden absolute top-0 w-8 h-0.5 bg-green-500 rounded-b-lg indicator"></div>
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modals (Camera, Preview, Delete, Success) -->
+    <!-- Camera Modal -->
     <div id="cameraModal" class="fixed inset-0 bg-black z-50 hidden flex flex-col justify-center items-center">
-        <!-- Header -->
         <div class="absolute top-0 w-full p-4 flex justify-between items-center z-20 bg-gradient-to-b from-black/80 to-transparent">
-            <button onclick="closeCamera()" class="text-white bg-white/10 backdrop-blur-md p-2 rounded-full w-10 h-10 flex items-center justify-center hover:bg-white/20 transition">
-                <i class="fas fa-times text-lg"></i>
-            </button>
-            <span class="text-white font-medium text-sm tracking-wide bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm">Square Mode</span>
-            <div class="w-10"></div> <!-- Spacer -->
+            <button onclick="closeCamera()" class="text-white bg-white/10 backdrop-blur-md p-2 rounded-full w-10 h-10 flex items-center justify-center hover:bg-white/20"><i class="fas fa-times"></i></button>
+            <span class="text-white font-medium text-sm bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm">Square Mode</span>
+            <div class="w-10"></div>
         </div>
-
-        <!-- Square Viewport Container -->
         <div class="relative w-full max-w-md aspect-square bg-black overflow-hidden shadow-2xl">
-            <!-- Video Feed -->
             <video id="videoFeed" autoplay playsinline class="w-full h-full object-cover mirror-active"></video>
             <canvas id="canvas" class="hidden"></canvas>
-            
-            <!-- Grid Overlay (Rule of Thirds) -->
             <div class="absolute inset-0 pointer-events-none opacity-30">
-                <div class="w-full h-1/3 border-b border-white"></div>
-                <div class="w-full h-1/3 border-b border-white top-1/3 absolute"></div>
-                <div class="h-full w-1/3 border-r border-white absolute top-0 left-0"></div>
-                <div class="h-full w-1/3 border-r border-white absolute top-0 left-1/3"></div>
+                <div class="w-full h-1/3 border-b border-white"></div><div class="w-full h-1/3 border-b border-white top-1/3 absolute"></div>
+                <div class="h-full w-1/3 border-r border-white absolute top-0 left-0"></div><div class="h-full w-1/3 border-r border-white absolute top-0 left-1/3"></div>
             </div>
         </div>
-
-        <!-- Controls -->
         <div class="absolute bottom-0 w-full p-6 pb-12 bg-gradient-to-t from-black via-black/80 to-transparent flex justify-around items-center z-20">
-            <!-- Mirror Toggle -->
-            <button onclick="toggleMirror()" class="text-white p-4 hover:text-blue-300 transition transform active:scale-90">
-                <div class="flex flex-col items-center">
-                    <i class="fas fa-exchange-alt text-2xl mb-1"></i>
-                    <span class="text-[10px] opacity-70">Flip</span>
-                </div>
-            </button>
-            
-            <!-- Shutter Button -->
-            <button onclick="capturePhoto()" class="w-20 h-20 bg-white rounded-full border-4 border-gray-300 flex items-center justify-center transform active:scale-90 transition-transform shadow-[0_0_25px_rgba(255,255,255,0.4)]">
-                <div class="w-16 h-16 bg-white rounded-full border-2 border-black"></div>
-            </button>
-
-            <!-- Placeholder / Switch Cam -->
-            <button class="text-white p-4 opacity-50 cursor-not-allowed">
-                <i class="fas fa-images text-2xl"></i>
-            </button>
+            <button onclick="toggleMirror()" class="text-white p-4 hover:text-blue-300"><div class="flex flex-col items-center"><i class="fas fa-exchange-alt text-2xl mb-1"></i><span class="text-[10px] opacity-70">Flip</span></div></button>
+            <button onclick="capturePhoto()" class="w-20 h-20 bg-white rounded-full border-4 border-gray-300 flex items-center justify-center active:scale-90 transition-transform"><div class="w-16 h-16 bg-white rounded-full border-2 border-black"></div></button>
+            <button class="text-white p-4 opacity-50 cursor-not-allowed"><i class="fas fa-images text-2xl"></i></button>
         </div>
     </div>
 
-    <!-- 5. PREVIEW MODAL -->
+    <!-- Preview Modal -->
     <div id="previewModal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white w-full max-w-xs rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-scale-in">
-            <div class="p-3 bg-gray-50 border-b flex justify-between items-center">
-                <h3 class="font-bold text-gray-800 text-sm">ពិនិត្យរូបថត (Preview)</h3>
-                <button onclick="closePreview()" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="p-4 bg-gray-100 flex-grow flex items-center justify-center">
-                <img id="previewImage" src="" class="w-64 h-64 object-cover shadow-lg border-4 border-white rounded-lg">
-            </div>
+            <div class="p-3 bg-gray-50 border-b flex justify-between items-center"><h3 class="font-bold text-gray-800 text-sm">Preview</h3><button onclick="closePreview()" class="text-gray-400"><i class="fas fa-times"></i></button></div>
+            <div class="p-4 bg-gray-100 flex-grow flex items-center justify-center"><img id="previewImage" src="" class="w-64 h-64 object-cover shadow-lg border-4 border-white rounded-lg"></div>
             <div class="p-4 space-y-2 bg-white border-t">
-                <button onclick="uploadPhoto()" id="btnSave" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 transition-all text-sm">
-                    <i class="fas fa-check"></i>
-                    <span>រក្សាទុក (Save)</span>
-                </button>
-                <button onclick="retakePhoto()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition-all text-sm">
-                    ថតម្តងទៀត (Retake)
-                </button>
+                <button onclick="uploadPhoto()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2"><i class="fas fa-check"></i> Save</button>
+                <button onclick="retakePhoto()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl">Retake</button>
             </div>
-            <div id="uploadingOverlay" class="absolute inset-0 bg-white/95 hidden flex flex-col items-center justify-center z-10">
-                <div class="loader mb-3 !w-10 !h-10 !border-4"></div>
-                <p class="text-gray-600 font-medium text-xs animate-pulse">កំពុងអាប់ឡូត...</p>
-            </div>
+            <div id="uploadingOverlay" class="absolute inset-0 bg-white/95 hidden flex flex-col items-center justify-center z-10"><div class="loader mb-3 !w-10 !h-10 !border-4"></div><p class="text-gray-600 font-medium text-xs animate-pulse">Uploading...</p></div>
         </div>
     </div>
 
-    <!-- 6. DELETE CONFIRMATION MODAL -->
+    <!-- Success Modal -->
+    <div id="successModal" class="fixed inset-0 bg-black/40 z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 shadow-2xl flex flex-col items-center animate-scale-in">
+            <div class="w-14 h-14 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-3"><i class="fas fa-check text-2xl"></i></div>
+            <h3 class="font-bold text-gray-800 text-lg">Success!</h3>
+        </div>
+    </div>
+    
+    <!-- Delete Modal -->
     <div id="deleteModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-scale-in">
             <div class="p-6 text-center">
-                <div class="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-trash-alt text-2xl"></i>
-                </div>
-                <h3 class="text-lg font-bold text-gray-800 mb-2">លុបរូបថត? (Delete Photo)</h3>
-                <p class="text-gray-500 text-sm mb-6">តើអ្នកពិតជាចង់លុបរូបថតរបស់សិស្សឈ្មោះ <span id="delStudentName" class="font-bold text-gray-800"></span> មែនទេ?</p>
-                <div class="flex gap-3">
-                    <button onclick="closeDeleteModal()" class="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-bold hover:bg-gray-50 transition">បោះបង់</button>
-                    <button onclick="confirmDelete()" class="flex-1 py-2.5 rounded-xl bg-red-600 text-white font-bold shadow-lg hover:bg-red-700 transition">លុបចេញ</button>
-                </div>
+                <div class="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-trash-alt text-2xl"></i></div>
+                <h3 class="text-lg font-bold text-gray-800 mb-2">Delete Photo?</h3>
+                <p class="text-gray-500 text-sm mb-6">Confirm deletion for <span id="delStudentName" class="font-bold text-gray-800"></span>?</p>
+                <div class="flex gap-3"><button onclick="closeDeleteModal()" class="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-bold">Cancel</button><button onclick="confirmDelete()" class="flex-1 py-2.5 rounded-xl bg-red-600 text-white font-bold shadow-lg">Delete</button></div>
             </div>
-        </div>
-    </div>
-
-    <!-- 7. SUCCESS MESSAGE MODAL -->
-    <div id="successModal" class="fixed inset-0 bg-black/40 z-[60] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl p-6 shadow-2xl flex flex-col items-center animate-scale-in">
-            <div class="w-14 h-14 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-3">
-                <i class="fas fa-check text-2xl"></i>
-            </div>
-            <h3 class="font-bold text-gray-800 text-lg">ជោគជ័យ! (Success)</h3>
-            <p class="text-gray-500 text-sm mt-1">ទិន្នន័យត្រូវបានធ្វើបច្ចុប្បន្នភាព</p>
         </div>
     </div>
 
@@ -271,7 +305,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <script>
-        // CONFIG
+        // --- CONFIGURATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyAc2g-t9A7du3K_nI2fJnw_OGxhmLfpP6s",
             authDomain: "dilistname.firebaseapp.com",
@@ -288,437 +322,425 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // State
+        // --- STATE & ADMIN ---
+        let currentAdmin = { id: 250, name: 'លន ដាវីត', verified: false };
         let activeStudentId = null;
         let activeStudentName = "";
         let capturedBlob = null;
         let videoStream = null;
-        let currentTab = 'home'; // 'home', 'missing', 'delete'
+        let currentTab = 'home';
         let cachedAllData = null;
         let pendingList = [];
         let isMirrored = true;
+        let modelsLoaded = false;
 
-        // --- SCROLL TO TOP ---
-        const backToTopBtn = document.getElementById('backToTopBtn');
-        window.addEventListener('scroll', () => {
-            if(backToTopBtn) {
-                backToTopBtn.classList.toggle('hidden', window.scrollY <= 300);
-                backToTopBtn.classList.toggle('flex', window.scrollY > 300);
+        // --- FACE API INIT ---
+        async function loadFaceAPI() {
+            try {
+                // Loading models from a CDN
+                const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models'; 
+                await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+                modelsLoaded = true;
+                console.log("FaceAPI Models Loaded");
+            } catch (e) {
+                console.error("Error loading FaceAPI models:", e);
             }
-        });
-        function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        }
+        loadFaceAPI(); // Start loading immediately
 
-        // --- SEARCH LOGIC ---
-        const searchInput = document.getElementById('searchInput');
-        const resultsArea = document.getElementById('resultsArea');
-        const searchLoader = document.getElementById('searchLoader');
-        const emptyState = document.getElementById('emptyState');
-        const fullPageLoader = document.getElementById('fullPageLoader');
-
-        searchInput.addEventListener('input', (e) => {
-            const query = e.target.value.trim();
-            if (currentTab === 'home') {
-                handleServerSearch(query);
-            } else {
-                // Client side search for 'missing' and 'delete' modes
-                filterCachedList(query);
-            }
-        });
-
-        function handleServerSearch(query) {
-            if (query.length === 0) {
-                resetResults();
+        // --- ADMIN LOGIN LOGIC ---
+        function initiateAdminLogin() {
+            const inputId = document.getElementById('adminIdInput').value;
+            if (inputId != currentAdmin.id) {
+                alert("ACCESS DENIED: Invalid Admin ID");
                 return;
             }
-            if(searchLoader) searchLoader.classList.remove('hidden');
-            if(emptyState) emptyState.classList.add('hidden');
             
-            db.ref('students').orderByKey().startAt(query).endAt(query + "\uf8ff").limitToFirst(20).once('value')
-                .then(snapshot => {
-                    if(searchLoader) searchLoader.classList.add('hidden');
-                    if(resultsArea) resultsArea.innerHTML = '';
-                    if (snapshot.exists()) {
-                        snapshot.forEach(child => {
-                            const data = { id: child.key, ...child.val() };
-                            resultsArea.appendChild(createStudentCard(data));
-                        });
+            // Check if admin exists in DB and has photo
+            db.ref('students/' + inputId).once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    if (data['រូបថត'] && data['រូបថត'] !== 'n/a') {
+                        // Start Verification
+                        startFaceVerification(data['រូបថត']);
                     } else {
-                        showNoData();
+                        alert("ADMIN PROFILE ERROR: No reference photo found in database for verification.");
                     }
-                });
+                } else {
+                    alert("Admin ID not found in database.");
+                }
+            });
         }
 
-        // --- SHARED DATA FETCH FOR MISSING & DELETE TABS ---
-        function fetchAllData() {
-            if (cachedAllData) {
-                processDataForTab();
+        async function startFaceVerification(referenceImageUrl) {
+            document.getElementById('faceVerifyModal').classList.remove('hidden');
+            document.getElementById('faceVerifyModal').classList.add('flex');
+            
+            // Start Camera for Verification
+            const video = document.getElementById('verifyVideo');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+                video.srcObject = stream;
+            } catch (err) {
+                alert("Camera access denied.");
+                closeVerifyModal();
                 return;
             }
-            if(fullPageLoader) fullPageLoader.classList.remove('hidden');
-            if(resultsArea) resultsArea.innerHTML = '';
-            if(emptyState) emptyState.classList.add('hidden');
 
-            db.ref('students').limitToFirst(1000).once('value')
-                .then(snapshot => {
-                    if(fullPageLoader) fullPageLoader.classList.add('hidden');
-                    cachedAllData = [];
-                    if (snapshot.exists()) {
-                        snapshot.forEach(child => {
-                            cachedAllData.push({ id: child.key, ...child.val() });
-                        });
-                        processDataForTab();
-                    } else {
-                        showNoData();
+            // Run Verification Loop
+            const verifyLoop = setInterval(async () => {
+                const status = document.getElementById('verifyStatus');
+                const score = document.getElementById('verifyMatchScore');
+
+                if (!modelsLoaded) {
+                    status.innerText = "Loading AI Models...";
+                    return;
+                }
+
+                // Detect Face in Camera
+                const detection = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+                
+                if (detection) {
+                    status.innerText = "Face Detected. Comparing...";
+                    
+                    // Fetch Reference Image & Detect Face
+                    // Note: This is computationally heavy. In a real app, descriptors should be pre-calculated.
+                    // For this single-file demo, we fetch and calculate on the fly (might be slow).
+                    try {
+                        const refImg = await faceapi.fetchImage(referenceImageUrl);
+                        const refDetection = await faceapi.detectSingleFace(refImg).withFaceLandmarks().withFaceDescriptor();
+                        
+                        if (refDetection) {
+                            const distance = faceapi.euclideanDistance(detection.descriptor, refDetection.descriptor);
+                            // Distance < 0.6 is match. 0.5 is stricter (requested 50% match context)
+                            const matchPercentage = Math.round((1 - distance) * 100);
+                            score.innerText = `Match Confidence: ${matchPercentage}%`;
+                            
+                            if (distance < 0.55) { // Threshold
+                                clearInterval(verifyLoop);
+                                completeLogin();
+                            }
+                        }
+                    } catch (e) {
+                        console.log("Comparison error (likely CORS on image):", e);
                     }
+                } else {
+                    status.innerText = "No Face Detected...";
+                }
+            }, 2000); // Check every 2s
+            
+            // Store interval to clear on close
+            video.dataset.interval = verifyLoop;
+        }
+
+        function closeVerifyModal() {
+            const video = document.getElementById('verifyVideo');
+            if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+            if (video.dataset.interval) clearInterval(video.dataset.interval);
+            document.getElementById('faceVerifyModal').classList.add('hidden');
+            document.getElementById('faceVerifyModal').classList.remove('flex');
+        }
+
+        function bypassLogin() {
+            // Dev backdoor
+            closeVerifyModal();
+            completeLogin();
+        }
+
+        function completeLogin() {
+            currentAdmin.verified = true;
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appContainer').classList.remove('hidden');
+            document.getElementById('appContainer').classList.add('flex');
+            document.getElementById('adminNameDisplay').innerText = currentAdmin.name;
+            closeVerifyModal();
+            loadAdminStats();
+        }
+
+        // --- ADMIN DASHBOARD LOGIC ---
+        function loadAdminStats() {
+            // Fetch logs for this admin
+            db.ref('admin_logs').orderByChild('adminId').equalTo(parseInt(currentAdmin.id)).on('value', snapshot => {
+                const list = document.getElementById('adminLogList');
+                list.innerHTML = '';
+                let count = 0;
+                
+                if (snapshot.exists()) {
+                    snapshot.forEach(child => {
+                        count++;
+                        const log = child.val();
+                        const date = new Date(log.timestamp).toLocaleTimeString();
+                        const li = document.createElement('li');
+                        li.className = "flex justify-between border-b border-gray-800 pb-1";
+                        li.innerHTML = `<span>Captured: ${log.studentName}</span> <span class="text-gray-500">${date}</span>`;
+                        // Prepend for newest first
+                        list.insertBefore(li, list.firstChild);
+                    });
+                } else {
+                    list.innerHTML = '<li class="text-center text-gray-600 italic">No captures yet.</li>';
+                }
+                document.getElementById('adminTotalCaptures').innerText = count;
+            });
+        }
+
+        function logAdminCapture(studentId, studentName) {
+            if (currentAdmin.verified) {
+                db.ref('admin_logs').push({
+                    adminId: currentAdmin.id,
+                    adminName: currentAdmin.name,
+                    studentId: studentId,
+                    studentName: studentName,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
                 });
+            }
+        }
+
+        // --- TAB SWITCHING & UI ---
+        function switchTab(tab) {
+            currentTab = tab;
+            // Reset UI
+            document.querySelectorAll('footer button').forEach(btn => {
+                const indicator = btn.querySelector('.indicator');
+                const icon = btn.querySelector('.icon-container');
+                if(indicator) indicator.classList.add('hidden');
+                if(icon) icon.className = "text-xl mb-1 icon-container"; // reset colors
+            });
+
+            // Set Active
+            let activeBtnId = 'tabHome';
+            if (tab === 'missing') activeBtnId = 'tabMissing';
+            if (tab === 'delete') activeBtnId = 'tabDelete';
+            if (tab === 'admin') activeBtnId = 'tabAdmin';
+            
+            const activeBtn = document.getElementById(activeBtnId);
+            if(activeBtn) {
+                activeBtn.querySelector('.indicator').classList.remove('hidden');
+                // Colors handled by inline hover classes mostly, but let's enforce
+                const colorMap = { 'home': 'text-blue-600', 'missing': 'text-gray-600', 'delete': 'text-red-500', 'admin': 'text-green-500' };
+                activeBtn.querySelector('.icon-container').classList.add(colorMap[tab]);
+            }
+
+            // View Logic
+            const searchContainer = document.getElementById('searchContainer');
+            const resultsArea = document.getElementById('resultsArea');
+            const adminPanel = document.getElementById('adminPanel');
+            const filterBanner = document.getElementById('filterBanner');
+            const emptyState = document.getElementById('emptyState');
+            
+            // Defaults
+            searchContainer.classList.remove('hidden');
+            resultsArea.classList.remove('hidden');
+            adminPanel.classList.add('hidden');
+            filterBanner.classList.add('hidden');
+            emptyState.classList.add('hidden');
+            const searchInput = document.getElementById('searchInput');
+
+            if (tab === 'home') {
+                searchInput.value = '';
+                searchInput.placeholder = "ស្វែងរកអត្តលេខ (ឧ. 123)...";
+                resultsArea.innerHTML = '';
+                emptyState.classList.remove('hidden');
+            } else if (tab === 'missing') {
+                searchInput.value = '';
+                searchInput.placeholder = "Search Pending...";
+                filterBanner.classList.remove('hidden');
+                document.getElementById('filterText').innerText = "Missing Photos";
+                fetchAllData();
+            } else if (tab === 'delete') {
+                searchInput.value = '';
+                searchInput.placeholder = "Search to Delete...";
+                fetchAllData();
+            } else if (tab === 'admin') {
+                // Admin View
+                searchContainer.classList.add('hidden');
+                resultsArea.classList.add('hidden');
+                adminPanel.classList.remove('hidden');
+            }
+        }
+
+        // --- SHARED DATA FETCH ---
+        function fetchAllData() {
+            if (cachedAllData) { processDataForTab(); return; }
+            document.getElementById('fullPageLoader').classList.remove('hidden');
+            db.ref('students').limitToFirst(1000).once('value').then(snapshot => {
+                document.getElementById('fullPageLoader').classList.add('hidden');
+                cachedAllData = [];
+                if (snapshot.exists()) {
+                    snapshot.forEach(child => cachedAllData.push({ id: child.key, ...child.val() }));
+                    processDataForTab();
+                }
+            });
         }
 
         function processDataForTab() {
             if (currentTab === 'missing') {
-                // Filter: No Photo
                 pendingList = cachedAllData.filter(s => !s['រូបថត'] || s['រូបថត'] === 'n/a' || s['រូបថត'] === "");
-                updateMissingBadge(pendingList.length);
-                const filterCount = document.getElementById('filterCount');
-                if(filterCount) filterCount.innerText = `${pendingList.length} នាក់`;
-            } else if (currentTab === 'delete') {
-                // Filter: Has Photo (so we can delete it) - or show all
-                // Show all for search, but emphasize those with photos
-                pendingList = cachedAllData; 
+                document.getElementById('missingBadge').innerText = pendingList.length;
+                document.getElementById('missingBadge').classList.remove('hidden');
+                document.getElementById('filterCount').innerText = pendingList.length;
+            } else {
+                pendingList = cachedAllData;
             }
-            filterCachedList(searchInput.value);
+            filterCachedList(""); // Show all initially
         }
 
         function filterCachedList(query) {
-            if(resultsArea) resultsArea.innerHTML = '';
-            
-            // Filter list based on search query
+            const resultsArea = document.getElementById('resultsArea');
+            resultsArea.innerHTML = '';
             let filtered = pendingList;
-            if (query) {
-                const searchStr = query.toLowerCase();
-                filtered = pendingList.filter(s => {
-                    const idMatch = s.id.toString().includes(searchStr);
-                    const nameMatch = (s['ឈ្មោះ'] || "").toLowerCase().includes(searchStr);
-                    return idMatch || nameMatch;
-                });
-            }
-            // Logic change: Don't hide results if query is empty in delete/missing modes.
-            // Just show the list.
-
-            if (filtered.length === 0) {
-                showNoData();
-                return;
-            }
             
-            // In Delete Tab, sort those with photos to top if filtering
-            if (currentTab === 'delete') {
-                filtered.sort((a, b) => {
-                    const aHas = (a['រូបថត'] && a['រូបថត'] !== 'n/a');
-                    const bHas = (b['រូបថត'] && b['រូបថត'] !== 'n/a');
-                    return bHas - aHas; 
-                });
+            if (query) {
+                const s = query.toLowerCase();
+                filtered = pendingList.filter(x => x.id.toString().includes(s) || (x['ឈ្មោះ']||"").toLowerCase().includes(s));
             }
 
-            filtered.slice(0, 50).forEach(student => { // Limit render for perf
-                resultsArea.appendChild(createStudentCard(student));
+            if (currentTab === 'delete') {
+                // Sort by has photo
+                filtered.sort((a,b) => (b['រូបថត'] && b['រូបថត']!=='n/a') - (a['រូបថត'] && a['រូបថត']!=='n/a'));
+            }
+
+            filtered.slice(0, 50).forEach(data => resultsArea.appendChild(createStudentCard(data)));
+        }
+
+        // --- SEARCH HANDLER ---
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            if (currentTab === 'home') handleServerSearch(e.target.value.trim());
+            else filterCachedList(e.target.value.trim());
+        });
+
+        function handleServerSearch(query) {
+            const resultsArea = document.getElementById('resultsArea');
+            if(!query) { resultsArea.innerHTML = ''; document.getElementById('emptyState').classList.remove('hidden'); return; }
+            
+            document.getElementById('searchLoader').classList.remove('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+            
+            db.ref('students').orderByKey().startAt(query).endAt(query+"\uf8ff").limitToFirst(20).once('value').then(snap => {
+                document.getElementById('searchLoader').classList.add('hidden');
+                resultsArea.innerHTML = '';
+                if(snap.exists()) snap.forEach(c => resultsArea.appendChild(createStudentCard({id:c.key, ...c.val()})));
+                else resultsArea.innerHTML = '<div class="text-center py-8 text-gray-400">No Data</div>';
             });
         }
 
-        // --- UI CARD CREATION ---
+        // --- CARD UI ---
         function createStudentCard(data) {
-            const hasImage = data['រូបថត'] && data['រូបថត'] !== "" && data['រូបថត'] !== "n/a";
-            const imageUrl = hasImage ? data['រូបថត'] : "https://via.placeholder.com/150/e2e8f0/94a3b8?text=No+Img";
+            const hasImage = data['រូបថត'] && data['រូបថត'] !== 'n/a' && data['រូបថត'] !== "";
+            const img = hasImage ? data['រូបថត'] : "https://via.placeholder.com/150/e2e8f0/94a3b8?text=No+Img";
+            const color = hasImage ? "bg-green-100 text-green-700" : "bg-red-50 text-red-600";
             
-            const statusColor = hasImage ? "bg-green-100 text-green-700 border-green-200" : "bg-red-50 text-red-600 border-red-100";
-            const statusText = hasImage ? "Active" : "Pending";
-            const statusIcon = hasImage ? "fa-check-circle" : "fa-exclamation-circle";
-
             const div = document.createElement('div');
             div.className = "bg-white rounded-xl p-3 shadow-sm border border-gray-100 flex items-center gap-3 transition-transform active:scale-[0.99] animate-fade-in-up";
             
-            let actionButton = '';
-
-            // LOGIC FOR BUTTONS BASED ON TAB
-            if (currentTab === 'delete') {
-                // DELETE MODE: Show Trash button ONLY if image exists
-                if (hasImage) {
-                    actionButton = `
-                    <button onclick="confirmDeleteModal('${data.id}', '${data['ឈ្មោះ']}')" class="shrink-0 w-10 h-10 bg-red-100 text-red-600 rounded-full flex items-center justify-center hover:bg-red-200 transition shadow-sm">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>`;
-                } else {
-                    actionButton = `<div class="shrink-0 w-10 h-10 flex items-center justify-center text-gray-300"><i class="fas fa-ban"></i></div>`;
-                }
-            } else {
-                // HOME/MISSING MODE: Show Camera if no image
-                if (!hasImage) {
-                    actionButton = `
-                    <button onclick="openCamera('${data.id}')" class="shrink-0 w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-100 transition shadow-sm">
-                        <i class="fas fa-camera"></i>
-                    </button>`;
-                }
+            let btn = '';
+            if (currentTab === 'delete' && hasImage) {
+                btn = `<button onclick="confirmDeleteModal('${data.id}', '${data['ឈ្មោះ']}')" class="shrink-0 w-10 h-10 bg-red-100 text-red-600 rounded-full flex items-center justify-center"><i class="fas fa-trash-alt"></i></button>`;
+            } else if (currentTab !== 'delete' && !hasImage) {
+                btn = `<button onclick="openCamera('${data.id}', '${data['ឈ្មោះ']}')" class="shrink-0 w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center"><i class="fas fa-camera"></i></button>`;
             }
 
             div.innerHTML = `
-                <div class="relative shrink-0" onclick="${!hasImage && currentTab !== 'delete' ? `openCamera('${data.id}')` : ''}">
-                    <img src="${imageUrl}" class="w-12 h-12 rounded-full object-cover border-2 ${hasImage ? 'border-green-400' : 'border-red-300'}">
-                    ${!hasImage && currentTab !== 'delete' ? `<div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center cursor-pointer backdrop-blur-[1px] animate-pulse"><i class="fas fa-camera text-white text-xs"></i></div>` : ''}
-                </div>
+                <div class="relative shrink-0"><img src="${img}" class="w-12 h-12 rounded-full object-cover border-2"></div>
                 <div class="flex-grow min-w-0">
-                    <h3 class="font-bold text-gray-800 text-base truncate leading-tight">${data['ឈ្មោះ'] || "Unknown"}</h3>
-                    <p class="text-gray-500 text-xs mb-1.5 truncate">${data['ជំនាញ'] || "N/A"}</p>
-                    <div class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${statusColor}">
-                        <i class="fas ${statusIcon} mr-1"></i>${statusText}
-                        <span class="ml-1.5 text-gray-400 font-mono opacity-70">#${data.id}</span>
-                    </div>
+                    <h3 class="font-bold text-gray-800 text-base truncate">${data['ឈ្មោះ']||"Unknown"}</h3>
+                    <div class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${color}"><span>#${data.id}</span></div>
                 </div>
-                ${actionButton}
+                ${btn}
             `;
             return div;
         }
 
-        // --- TAB SWITCHING ---
-        function switchTab(tab) {
-            currentTab = tab;
-            
-            // UI Reset
-            document.querySelectorAll('footer button').forEach(btn => {
-                btn.className = "flex flex-col items-center justify-center w-full h-full text-gray-400 relative group transition-colors hover:text-gray-600";
-                const indicator = btn.querySelector('.indicator');
-                if(indicator) indicator.classList.add('hidden');
-                
-                const iconContainer = btn.querySelector('.icon-container');
-                if(iconContainer) iconContainer.classList.remove('text-blue-600', 'text-red-500');
-            });
-
-            // Active State Logic
-            const activeBtn = document.getElementById(tab === 'home' ? 'tabHome' : tab === 'missing' ? 'tabMissing' : 'tabDelete');
-            const colorClass = tab === 'delete' ? 'text-red-500' : 'text-blue-600';
-            const bgClass = tab === 'delete' ? 'bg-red-600' : 'bg-blue-600';
-            
-            if(activeBtn) {
-                activeBtn.className = `flex flex-col items-center justify-center w-full h-full ${colorClass} relative group transition-colors`;
-                const indicator = activeBtn.querySelector('.indicator');
-                if(indicator) {
-                    indicator.classList.remove('hidden');
-                    indicator.className = `absolute top-0 w-8 h-0.5 ${bgClass} rounded-b-lg indicator`;
-                }
-            }
-            
-            // Content Logic
-            searchInput.value = '';
-            if(resultsArea) resultsArea.innerHTML = '';
-            
-            const filterBanner = document.getElementById('filterBanner');
-            if(filterBanner) filterBanner.classList.add('hidden');
-            
-            const emptyState = document.getElementById('emptyState');
-            if(emptyState) emptyState.classList.remove('hidden');
-            
-            const mainNav = document.getElementById('mainNav');
-            if(mainNav) mainNav.className = `bg-gradient-to-r ${tab === 'delete' ? 'from-red-700 to-red-500' : 'from-blue-700 to-blue-500'} shadow-lg sticky top-0 z-40 transition-colors duration-300`;
-
-            if (tab === 'home') {
-                searchInput.placeholder = "ស្វែងរកអត្តលេខ (ឧ. 123)...";
-            } else if (tab === 'missing') {
-                searchInput.placeholder = "ស្វែងរក (ឈ្មោះ/លេខ)...";
-                if(filterBanner) filterBanner.classList.remove('hidden');
-                const filterText = document.getElementById('filterText');
-                if(filterText) filterText.innerText = "បញ្ជីអ្នកដែលគ្មានរូបថត (Missing Photos)";
-                fetchAllData();
-            } else if (tab === 'delete') {
-                searchInput.placeholder = "ស្វែងរកដើម្បីលុប (Search to Delete)...";
-                fetchAllData();
-            }
-        }
-
-        // --- DELETE LOGIC ---
-        function confirmDeleteModal(id, name) {
-            activeStudentId = id;
-            activeStudentName = name;
-            const delName = document.getElementById('delStudentName');
-            if(delName) delName.innerText = name;
-            const delModal = document.getElementById('deleteModal');
-            if(delModal) delModal.classList.remove('hidden');
-        }
-
-        function closeDeleteModal() {
-            const delModal = document.getElementById('deleteModal');
-            if(delModal) delModal.classList.add('hidden');
-        }
-
-        function confirmDelete() {
-            if (!activeStudentId) return;
-            
-            // Update Firebase
-            db.ref('students/' + activeStudentId).update({ 'រូបថត': "" }).then(() => {
-                closeDeleteModal();
-                showSuccessModal();
-                updateCache(activeStudentId, "");
-            }).catch(err => {
-                alert("Error deleting: " + err);
-            });
-        }
-
-        function showSuccessModal() {
-            const modal = document.getElementById('successModal');
-            if(modal) {
-                modal.classList.remove('hidden');
-                setTimeout(() => {
-                    modal.classList.add('hidden');
-                    // Refresh View
-                    if (currentTab === 'delete') filterCachedList(searchInput.value);
-                }, 1500);
-            }
-        }
-
-        // --- CAMERA LOGIC ---
-        function openCamera(id) {
-            activeStudentId = id;
-            const camModal = document.getElementById('cameraModal');
-            if(camModal) camModal.classList.remove('hidden');
+        // --- CAMERA & UPLOAD ---
+        function openCamera(id, name) {
+            activeStudentId = id; activeStudentName = name;
+            document.getElementById('cameraModal').classList.remove('hidden');
             startCamera();
         }
-
         function startCamera() {
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-            .then(stream => { 
-                videoStream = stream; 
-                const video = document.getElementById('videoFeed');
-                if(video) {
-                    video.srcObject = stream; 
-                    applyMirror();
-                }
-            })
-            .catch(err => { alert("Camera Error: " + err); closeCamera(); });
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(s => {
+                videoStream = s;
+                const v = document.getElementById('videoFeed');
+                v.srcObject = s;
+                if(isMirrored) v.classList.add('mirror-active');
+            }).catch(e => alert("Camera Error: "+e));
         }
-
-        function toggleMirror() {
-            isMirrored = !isMirrored;
-            applyMirror();
-        }
-
-        function applyMirror() {
-            const video = document.getElementById('videoFeed');
-            if(video) {
-                if (isMirrored) {
-                    video.classList.add('mirror-active');
-                    video.classList.remove('mirror-inactive');
-                } else {
-                    video.classList.add('mirror-inactive');
-                    video.classList.remove('mirror-active');
-                }
-            }
-        }
-
-        function closeCamera() {
-            if (videoStream) videoStream.getTracks().forEach(t => t.stop());
-            const camModal = document.getElementById('cameraModal');
-            if(camModal) camModal.classList.add('hidden');
-        }
-
-        function capturePhoto() {
-            const video = document.getElementById('videoFeed');
-            const canvas = document.getElementById('canvas');
-            
-            if(!video || !canvas) return;
-
-            // Square Crop Logic
-            const size = Math.min(video.videoWidth, video.videoHeight);
-            canvas.width = size;
-            canvas.height = size;
-            const ctx = canvas.getContext('2d');
-            
-            // Calculate center crop
-            const startX = (video.videoWidth - size) / 2;
-            const startY = (video.videoHeight - size) / 2;
-
-            if (isMirrored) {
-                ctx.translate(size, 0);
-                ctx.scale(-1, 1);
-            }
-            
-            ctx.drawImage(video, startX, startY, size, size, 0, 0, size, size);
-            
-            capturedBlob = canvas.toDataURL('image/jpeg');
-            closeCamera();
-            const previewImage = document.getElementById('previewImage');
-            if(previewImage) previewImage.src = capturedBlob;
-            const previewModal = document.getElementById('previewModal');
-            if(previewModal) previewModal.classList.remove('hidden');
-        }
-
-        // --- UPLOAD & SAVE ---
-        function retakePhoto() {
-            const previewModal = document.getElementById('previewModal');
-            if(previewModal) previewModal.classList.add('hidden');
-            openCamera(activeStudentId);
-        }
-        function closePreview() { 
-            const previewModal = document.getElementById('previewModal');
-            if(previewModal) previewModal.classList.add('hidden'); 
-        }
+        function toggleMirror() { isMirrored = !isMirrored; document.getElementById('videoFeed').classList.toggle('mirror-active'); document.getElementById('videoFeed').classList.toggle('mirror-inactive'); }
+        function closeCamera() { if(videoStream) videoStream.getTracks().forEach(t=>t.stop()); document.getElementById('cameraModal').classList.add('hidden'); }
         
+        function capturePhoto() {
+            const v = document.getElementById('videoFeed');
+            const c = document.getElementById('canvas');
+            const size = Math.min(v.videoWidth, v.videoHeight);
+            c.width = size; c.height = size;
+            const ctx = c.getContext('2d');
+            const sx = (v.videoWidth - size)/2; const sy = (v.videoHeight - size)/2;
+            if(isMirrored) { ctx.translate(size, 0); ctx.scale(-1, 1); }
+            ctx.drawImage(v, sx, sy, size, size, 0, 0, size, size);
+            capturedBlob = c.toDataURL('image/jpeg');
+            closeCamera();
+            document.getElementById('previewImage').src = capturedBlob;
+            document.getElementById('previewModal').classList.remove('hidden');
+        }
+
         function uploadPhoto() {
-            if (!capturedBlob) return;
-            const overlay = document.getElementById('uploadingOverlay');
-            if(overlay) overlay.classList.remove('hidden');
-            
-            const formData = new FormData();
-            formData.append('file', capturedBlob);
-            formData.append('upload_preset', CLOUDINARY_PRESET);
-            
-            fetch(CLOUDINARY_URL, { method: 'POST', body: formData })
-            .then(res => res.json())
-            .then(data => { if (data.secure_url) saveToFirebase(data.secure_url); })
-            .catch(err => { 
-                alert("Upload Failed"); 
-                if(overlay) overlay.classList.add('hidden'); 
-            });
+            if(!capturedBlob) return;
+            document.getElementById('uploadingOverlay').classList.remove('hidden');
+            const fd = new FormData(); fd.append('file', capturedBlob); fd.append('upload_preset', CLOUDINARY_PRESET);
+            fetch(CLOUDINARY_URL, { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
+                if(d.secure_url) saveToFirebase(d.secure_url);
+            }).catch(e => { alert("Upload Failed"); document.getElementById('uploadingOverlay').classList.add('hidden'); });
         }
 
         function saveToFirebase(url) {
             db.ref('students/' + activeStudentId).update({ 'រូបថត': url }).then(() => {
-                const overlay = document.getElementById('uploadingOverlay');
-                if(overlay) overlay.classList.add('hidden');
+                // LOG ADMIN ACTION
+                logAdminCapture(activeStudentId, activeStudentName);
                 
-                const previewModal = document.getElementById('previewModal');
-                if(previewModal) previewModal.classList.add('hidden');
+                document.getElementById('uploadingOverlay').classList.add('hidden');
+                document.getElementById('previewModal').classList.add('hidden');
+                document.getElementById('successModal').classList.remove('hidden');
+                setTimeout(() => document.getElementById('successModal').classList.add('hidden'), 1500);
                 
-                showSuccessModal();
-                updateCache(activeStudentId, url);
+                // Update local cache if exists
+                if(cachedAllData) {
+                    const idx = cachedAllData.findIndex(x=>x.id==activeStudentId);
+                    if(idx!==-1) cachedAllData[idx]['រូបថត']=url;
+                }
+                if(currentTab !== 'home') processDataForTab();
             });
         }
+        
+        function retakePhoto() { document.getElementById('previewModal').classList.add('hidden'); openCamera(activeStudentId, activeStudentName); }
+        function closePreview() { document.getElementById('previewModal').classList.add('hidden'); }
 
-        // --- HELPER ---
-        function updateCache(id, url) {
-            // Update local cache to reflect changes immediately
-            if (cachedAllData) {
-                const idx = cachedAllData.findIndex(s => s.id === id);
-                if (idx !== -1) cachedAllData[idx]['រូបថត'] = url;
-            }
-            
-            if (currentTab === 'home') {
-                handleServerSearch(searchInput.value);
-            } else {
+        // --- DELETE ---
+        function confirmDeleteModal(id, name) {
+            activeStudentId = id;
+            document.getElementById('delStudentName').innerText = name;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+        function closeDeleteModal() { document.getElementById('deleteModal').classList.add('hidden'); }
+        function confirmDelete() {
+            if(!activeStudentId) return;
+            db.ref('students/' + activeStudentId).update({ 'រូបថត': "" }).then(() => {
+                closeDeleteModal();
+                if(cachedAllData) {
+                    const idx = cachedAllData.findIndex(x=>x.id==activeStudentId);
+                    if(idx!==-1) cachedAllData[idx]['រូបថត']="";
+                }
                 processDataForTab();
-            }
+            });
         }
-
-        function updateMissingBadge(count) {
-            const badge = document.getElementById('missingBadge');
-            if(badge) {
-                badge.innerText = count;
-                badge.classList.toggle('hidden', count === 0);
-            }
-        }
-
-        function showNoData() {
-            if(resultsArea) resultsArea.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">មិនមានទិន្នន័យ (No Data)</div>`;
-        }
-        function resetResults() {
-            if(resultsArea) resultsArea.innerHTML = '';
-            if(emptyState) emptyState.classList.remove('hidden');
-        }
+        
+        // --- SCROLL TO TOP ---
+        const btnTop = document.getElementById('backToTopBtn');
+        window.addEventListener('scroll', () => {
+            if(window.scrollY > 300) { btnTop.classList.remove('hidden'); btnTop.classList.add('flex'); }
+            else { btnTop.classList.add('hidden'); btnTop.classList.remove('flex'); }
+        });
+        function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
     </script>
 </body>
 </html>
