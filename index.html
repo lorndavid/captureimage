@@ -24,6 +24,20 @@
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        /* Animations */
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up { animation: fade-in-up 0.3s ease-out forwards; }
+        
+        @keyframes scale-in {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-scale-in { animation: scale-in 0.2s ease-out forwards; }
+
         .loader {
             border: 2px solid #f3f3f3;
             border-radius: 50%;
@@ -32,32 +46,31 @@
             height: 20px;
             animation: spin 1s linear infinite;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
         /* Glassmorphism utility */
         .glass {
             background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
+
+        /* Mirror Toggle Class */
+        .mirror-active { transform: scaleX(-1); }
+        .mirror-inactive { transform: scaleX(1); }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col pb-20"> 
+<body class="bg-gray-100 min-h-screen flex flex-col pb-24"> 
 
-    <!-- 1. NAVBAR (Left Aligned & Bigger) -->
-    <nav class="bg-gradient-to-r from-blue-700 to-blue-500 shadow-lg sticky top-0 z-40">
+    <!-- 1. NAVBAR -->
+    <nav class="bg-gradient-to-r from-blue-700 to-blue-500 shadow-lg sticky top-0 z-40 transition-colors duration-300" id="mainNav">
         <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-start"> 
             <div class="flex items-center gap-3">
-                <!-- BIGGER LOGO -->
                 <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md p-1">
                     <img src="https://i.postimg.cc/FHBn0Fdf/di3-copy.png" alt="Logo" class="w-full h-full object-contain">
                 </div>
                 <div>
-                    <!-- BIGGER TEXT -->
                     <h1 class="text-white font-bold text-xl leading-tight tracking-wide">បញ្ជីឈ្មោះសិស្ស</h1>
-                    <!-- BIGGER SUBTEXT -->
                     <p class="text-blue-100 text-xs font-medium">Student Database</p>
                 </div>
             </div>
@@ -67,7 +80,7 @@
     <!-- 2. MAIN CONTENT -->
     <main class="flex-grow max-w-2xl mx-auto w-full p-3 space-y-3">
 
-        <!-- Search Box (Compact) -->
+        <!-- Search Box -->
         <div class="bg-white rounded-xl shadow-sm p-1.5 sticky top-20 z-30 ring-1 ring-gray-200 transition-all duration-300" id="searchContainer">
             <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -77,29 +90,27 @@
                     class="block w-full pl-9 pr-4 py-2 bg-gray-50 border-none rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all text-sm font-medium" 
                     placeholder="ស្វែងរកអត្តលេខ (ឧ. 123)..."
                     autocomplete="off">
-                
-                <!-- Loading Indicator inside search -->
                 <div id="searchLoader" class="absolute inset-y-0 right-0 pr-3 flex items-center hidden">
                     <div class="loader"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Filter Status Banner -->
+        <!-- Filter/Status Banner -->
         <div id="filterBanner" class="hidden bg-orange-50 border border-orange-100 rounded-lg p-2 flex items-center justify-between animate-fade-in-down">
             <div class="flex items-center text-orange-700">
                 <i class="fas fa-filter mr-2 text-xs"></i>
-                <span class="font-bold text-xs">បញ្ជីអ្នកដែលគ្មានរូបថត (Missing Photos)</span>
+                <span class="font-bold text-xs" id="filterText">បញ្ជីអ្នកដែលគ្មានរូបថត (Missing Photos)</span>
             </div>
             <div class="text-[10px] text-orange-500 font-bold bg-orange-100 px-2 py-0.5 rounded-full" id="filterCount">...</div>
         </div>
 
         <!-- Results List -->
         <div id="resultsArea" class="space-y-2.5">
-            <!-- Initial State / Empty State -->
-            <div id="emptyState" class="text-center py-8 opacity-60">
-                <i class="fas fa-id-card text-4xl text-gray-300 mb-2"></i>
-                <p class="text-gray-500 text-sm">វាយបញ្ចូលអត្តលេខដើម្បីស្វែងរក</p>
+            <!-- Empty State -->
+            <div id="emptyState" class="text-center py-12 opacity-60">
+                <i class="fas fa-id-card text-5xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500 text-sm font-medium">វាយបញ្ចូលអត្តលេខ ឬឈ្មោះដើម្បីស្វែងរក</p>
             </div>
         </div>
         
@@ -111,89 +122,147 @@
 
     </main>
 
-    <!-- BACK TO TOP BUTTON (New) -->
+    <!-- Back To Top -->
     <button id="backToTopBtn" onclick="scrollToTop()" class="fixed bottom-20 right-4 z-30 bg-blue-600 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-lg shadow-blue-500/40 hidden transition-all duration-300 hover:bg-blue-700 active:scale-90 transform translate-y-0 opacity-100">
         <i class="fas fa-arrow-up text-sm"></i>
     </button>
 
-    <!-- 3. FOOTER NAVIGATION (Compact) -->
-    <footer class="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 glass pb-safe transition-all duration-300 h-14">
-        <div class="flex justify-around items-center max-w-2xl mx-auto h-full">
+    <!-- 3. FOOTER NAVIGATION -->
+    <footer class="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 glass pb-safe transition-all duration-300 h-16">
+        <div class="flex justify-around items-center max-w-2xl mx-auto h-full px-2">
             
             <!-- Tab 1: Home/Search -->
             <button onclick="switchTab('home')" id="tabHome" class="flex flex-col items-center justify-center w-full h-full text-blue-600 relative group transition-colors">
-                <div class="text-lg mb-0.5 transition-transform group-active:scale-90">
+                <div class="text-xl mb-1 transition-transform group-active:scale-90 icon-container">
                     <i class="fas fa-search"></i>
                 </div>
-                <span class="text-[10px] font-bold">ស្វែងរក</span>
-                <!-- Active Indicator -->
-                <div class="absolute top-0 w-8 h-0.5 bg-blue-600 rounded-b-lg"></div>
+                <span class="text-[10px] font-bold">ស្វែងរក (Search)</span>
+                <div class="absolute top-0 w-8 h-0.5 bg-blue-600 rounded-b-lg indicator"></div>
             </button>
 
-            <!-- Tab 2: Missing Photos (Filter) -->
+            <!-- Tab 2: Missing Photos -->
             <button onclick="switchTab('missing')" id="tabMissing" class="flex flex-col items-center justify-center w-full h-full text-gray-400 relative group hover:text-gray-600 transition-colors">
-                <div class="relative text-lg mb-0.5 transition-transform group-active:scale-90">
+                <div class="relative text-xl mb-1 transition-transform group-active:scale-90 icon-container">
                     <i class="fas fa-camera-retro"></i>
-                    <!-- Badge -->
                     <span id="missingBadge" class="hidden absolute -top-1.5 -right-2 bg-red-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full border border-white shadow-sm min-w-[16px]">0</span>
                 </div>
-                <span class="text-[10px] font-bold">ត្រូវថត</span>
-                <div class="hidden absolute top-0 w-8 h-0.5 bg-red-500 rounded-b-lg"></div>
+                <span class="text-[10px] font-bold">ត្រូវថត (Pending)</span>
+                <div class="hidden absolute top-0 w-8 h-0.5 bg-red-500 rounded-b-lg indicator"></div>
+            </button>
+
+            <!-- Tab 3: Delete Image -->
+            <button onclick="switchTab('delete')" id="tabDelete" class="flex flex-col items-center justify-center w-full h-full text-gray-400 relative group hover:text-red-500 transition-colors">
+                <div class="text-xl mb-1 transition-transform group-active:scale-90 icon-container">
+                    <i class="fas fa-trash-alt"></i>
+                </div>
+                <span class="text-[10px] font-bold">លុបរូប (Delete)</span>
+                <div class="hidden absolute top-0 w-8 h-0.5 bg-red-600 rounded-b-lg indicator"></div>
             </button>
 
         </div>
     </footer>
 
-    <!-- 4. CAMERA MODAL -->
-    <div id="cameraModal" class="fixed inset-0 bg-black z-50 hidden flex flex-col">
-        <div class="absolute top-0 w-full p-3 flex justify-between items-center z-10 bg-gradient-to-b from-black/70 to-transparent">
-            <button onclick="closeCamera()" class="text-white bg-white/20 backdrop-blur-md p-2 rounded-full w-8 h-8 flex items-center justify-center">
-                <i class="fas fa-times text-sm"></i>
+    <!-- 4. PROFESSIONAL CAMERA MODAL (Square) -->
+    <div id="cameraModal" class="fixed inset-0 bg-black z-50 hidden flex flex-col justify-center items-center">
+        <!-- Header -->
+        <div class="absolute top-0 w-full p-4 flex justify-between items-center z-20 bg-gradient-to-b from-black/80 to-transparent">
+            <button onclick="closeCamera()" class="text-white bg-white/10 backdrop-blur-md p-2 rounded-full w-10 h-10 flex items-center justify-center hover:bg-white/20 transition">
+                <i class="fas fa-times text-lg"></i>
             </button>
-            <span class="text-white font-medium text-sm tracking-wide">ថតរូបសិស្ស</span>
-            <div class="w-8"></div>
+            <span class="text-white font-medium text-sm tracking-wide bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm">Square Mode</span>
+            <div class="w-10"></div> <!-- Spacer -->
         </div>
-        <div class="flex-grow relative bg-black flex items-center justify-center overflow-hidden">
-            <video id="videoFeed" autoplay playsinline class="w-full h-full object-cover transform scale-x-[-1]"></video>
+
+        <!-- Square Viewport Container -->
+        <div class="relative w-full max-w-md aspect-square bg-black overflow-hidden shadow-2xl">
+            <!-- Video Feed -->
+            <video id="videoFeed" autoplay playsinline class="w-full h-full object-cover mirror-active"></video>
             <canvas id="canvas" class="hidden"></canvas>
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div class="w-56 h-56 border-2 border-white/50 rounded-full box-border"></div>
+            
+            <!-- Grid Overlay (Rule of Thirds) -->
+            <div class="absolute inset-0 pointer-events-none opacity-30">
+                <div class="w-full h-1/3 border-b border-white"></div>
+                <div class="w-full h-1/3 border-b border-white top-1/3 absolute"></div>
+                <div class="h-full w-1/3 border-r border-white absolute top-0 left-0"></div>
+                <div class="h-full w-1/3 border-r border-white absolute top-0 left-1/3"></div>
             </div>
         </div>
-        <div class="bg-black p-4 pb-8 flex justify-around items-center">
-            <button class="text-white p-4 opacity-0"><i class="fas fa-sync text-xl"></i></button>
-            <button onclick="capturePhoto()" class="w-16 h-16 bg-white rounded-full border-4 border-gray-300 flex items-center justify-center transform active:scale-90 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.3)]">
-                <div class="w-12 h-12 bg-white rounded-full border-2 border-black"></div>
+
+        <!-- Controls -->
+        <div class="absolute bottom-0 w-full p-6 pb-12 bg-gradient-to-t from-black via-black/80 to-transparent flex justify-around items-center z-20">
+            <!-- Mirror Toggle -->
+            <button onclick="toggleMirror()" class="text-white p-4 hover:text-blue-300 transition transform active:scale-90">
+                <div class="flex flex-col items-center">
+                    <i class="fas fa-exchange-alt text-2xl mb-1"></i>
+                    <span class="text-[10px] opacity-70">Flip</span>
+                </div>
             </button>
-            <button class="text-white p-4 opacity-0"><i class="fas fa-image text-xl"></i></button>
+            
+            <!-- Shutter Button -->
+            <button onclick="capturePhoto()" class="w-20 h-20 bg-white rounded-full border-4 border-gray-300 flex items-center justify-center transform active:scale-90 transition-transform shadow-[0_0_25px_rgba(255,255,255,0.4)]">
+                <div class="w-16 h-16 bg-white rounded-full border-2 border-black"></div>
+            </button>
+
+            <!-- Placeholder / Switch Cam -->
+            <button class="text-white p-4 opacity-50 cursor-not-allowed">
+                <i class="fas fa-images text-2xl"></i>
+            </button>
         </div>
     </div>
 
     <!-- 5. PREVIEW MODAL -->
     <div id="previewModal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-xs rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="bg-white w-full max-w-xs rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-scale-in">
             <div class="p-3 bg-gray-50 border-b flex justify-between items-center">
-                <h3 class="font-bold text-gray-800 text-sm">ពិនិត្យរូបថត</h3>
+                <h3 class="font-bold text-gray-800 text-sm">ពិនិត្យរូបថត (Preview)</h3>
                 <button onclick="closePreview()" class="text-gray-400 hover:text-gray-600">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="p-4 bg-gray-100 flex-grow flex items-center justify-center">
-                <img id="previewImage" src="" class="w-40 h-40 rounded-full object-cover shadow-lg border-4 border-white">
+                <img id="previewImage" src="" class="w-64 h-64 object-cover shadow-lg border-4 border-white rounded-lg">
             </div>
             <div class="p-4 space-y-2 bg-white border-t">
-                <button onclick="uploadPhoto()" id="btnSave" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 transition-all text-sm">
+                <button onclick="uploadPhoto()" id="btnSave" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 transition-all text-sm">
                     <i class="fas fa-check"></i>
                     <span>រក្សាទុក (Save)</span>
                 </button>
-                <button onclick="retakePhoto()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 rounded-lg transition-all text-sm">
+                <button onclick="retakePhoto()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition-all text-sm">
                     ថតម្តងទៀត (Retake)
                 </button>
             </div>
-            <div id="uploadingOverlay" class="absolute inset-0 bg-white/90 hidden flex flex-col items-center justify-center z-10">
-                <div class="loader mb-3 !w-8 !h-8 !border-4"></div>
+            <div id="uploadingOverlay" class="absolute inset-0 bg-white/95 hidden flex flex-col items-center justify-center z-10">
+                <div class="loader mb-3 !w-10 !h-10 !border-4"></div>
                 <p class="text-gray-600 font-medium text-xs animate-pulse">កំពុងអាប់ឡូត...</p>
             </div>
+        </div>
+    </div>
+
+    <!-- 6. DELETE CONFIRMATION MODAL -->
+    <div id="deleteModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-scale-in">
+            <div class="p-6 text-center">
+                <div class="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-trash-alt text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-800 mb-2">លុបរូបថត? (Delete Photo)</h3>
+                <p class="text-gray-500 text-sm mb-6">តើអ្នកពិតជាចង់លុបរូបថតរបស់សិស្សឈ្មោះ <span id="delStudentName" class="font-bold text-gray-800"></span> មែនទេ?</p>
+                <div class="flex gap-3">
+                    <button onclick="closeDeleteModal()" class="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-bold hover:bg-gray-50 transition">បោះបង់</button>
+                    <button onclick="confirmDelete()" class="flex-1 py-2.5 rounded-xl bg-red-600 text-white font-bold shadow-lg hover:bg-red-700 transition">លុបចេញ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. SUCCESS MESSAGE MODAL -->
+    <div id="successModal" class="fixed inset-0 bg-black/40 z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 shadow-2xl flex flex-col items-center animate-scale-in">
+            <div class="w-14 h-14 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-3">
+                <i class="fas fa-check text-2xl"></i>
+            </div>
+            <h3 class="font-bold text-gray-800 text-lg">ជោគជ័យ! (Success)</h3>
+            <p class="text-gray-500 text-sm mt-1">ទិន្នន័យត្រូវបានធ្វើបច្ចុប្បន្នភាព</p>
         </div>
     </div>
 
@@ -202,9 +271,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <script>
-        // ==========================================
-        // CONFIGURATION
-        // ==========================================
+        // CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyAc2g-t9A7du3K_nI2fJnw_OGxhmLfpP6s",
             authDomain: "dilistname.firebaseapp.com",
@@ -215,42 +282,33 @@
             appId: "1:897983357871:web:42a046bc9fb3e0543dc55a",
             measurementId: "G-NQ798D9J6K"
         };
-
         const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dttx1x743/image/upload";
         const CLOUDINARY_PRESET = "difulllist"; 
 
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        // State
         let activeStudentId = null;
+        let activeStudentName = "";
         let capturedBlob = null;
         let videoStream = null;
-        let isMissingTab = false;
+        let currentTab = 'home'; // 'home', 'missing', 'delete'
         let cachedAllData = null;
         let pendingList = [];
+        let isMirrored = true;
 
-        // ==========================================
-        // SCROLL TO TOP LOGIC (NEW)
-        // ==========================================
+        // --- SCROLL TO TOP ---
         const backToTopBtn = document.getElementById('backToTopBtn');
-
         window.addEventListener('scroll', () => {
-            if (window.scrollY > 300) {
-                backToTopBtn.classList.remove('hidden');
-                backToTopBtn.classList.add('flex'); // Use flex to center icon
-            } else {
-                backToTopBtn.classList.add('hidden');
-                backToTopBtn.classList.remove('flex');
+            if(backToTopBtn) {
+                backToTopBtn.classList.toggle('hidden', window.scrollY <= 300);
+                backToTopBtn.classList.toggle('flex', window.scrollY > 300);
             }
         });
+        function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
-        function scrollToTop() {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        // ==========================================
-        // SEARCH & LISTENER LOGIC
-        // ==========================================
+        // --- SEARCH LOGIC ---
         const searchInput = document.getElementById('searchInput');
         const resultsArea = document.getElementById('resultsArea');
         const searchLoader = document.getElementById('searchLoader');
@@ -259,227 +317,407 @@
 
         searchInput.addEventListener('input', (e) => {
             const query = e.target.value.trim();
-            if (isMissingTab) {
-                filterPendingList(query);
-            } else {
+            if (currentTab === 'home') {
                 handleServerSearch(query);
+            } else {
+                // Client side search for 'missing' and 'delete' modes
+                filterCachedList(query);
             }
         });
 
         function handleServerSearch(query) {
             if (query.length === 0) {
-                resultsArea.innerHTML = '';
-                emptyState.classList.remove('hidden');
-                resultsArea.appendChild(emptyState);
-                searchLoader.classList.add('hidden');
+                resetResults();
                 return;
             }
-
-            searchLoader.classList.remove('hidden');
-            emptyState.classList.add('hidden');
-
+            if(searchLoader) searchLoader.classList.remove('hidden');
+            if(emptyState) emptyState.classList.add('hidden');
+            
             db.ref('students').orderByKey().startAt(query).endAt(query + "\uf8ff").limitToFirst(20).once('value')
                 .then(snapshot => {
-                    searchLoader.classList.add('hidden');
-                    resultsArea.innerHTML = '';
-
+                    if(searchLoader) searchLoader.classList.add('hidden');
+                    if(resultsArea) resultsArea.innerHTML = '';
                     if (snapshot.exists()) {
                         snapshot.forEach(child => {
                             const data = { id: child.key, ...child.val() };
                             resultsArea.appendChild(createStudentCard(data));
                         });
                     } else {
-                        resultsArea.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">មិនមានទិន្នន័យ (No Data)</div>`;
+                        showNoData();
                     }
                 });
         }
 
-        function fetchAllDataForPending() {
+        // --- SHARED DATA FETCH FOR MISSING & DELETE TABS ---
+        function fetchAllData() {
             if (cachedAllData) {
-                processPendingData();
+                processDataForTab();
                 return;
             }
-            fullPageLoader.classList.remove('hidden');
-            resultsArea.innerHTML = '';
-            emptyState.classList.add('hidden');
+            if(fullPageLoader) fullPageLoader.classList.remove('hidden');
+            if(resultsArea) resultsArea.innerHTML = '';
+            if(emptyState) emptyState.classList.add('hidden');
 
             db.ref('students').limitToFirst(1000).once('value')
                 .then(snapshot => {
-                    fullPageLoader.classList.add('hidden');
+                    if(fullPageLoader) fullPageLoader.classList.add('hidden');
                     cachedAllData = [];
                     if (snapshot.exists()) {
                         snapshot.forEach(child => {
                             cachedAllData.push({ id: child.key, ...child.val() });
                         });
-                        processPendingData();
+                        processDataForTab();
                     } else {
-                        resultsArea.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">Database Empty</div>`;
+                        showNoData();
                     }
                 });
         }
 
-        function processPendingData() {
-            pendingList = cachedAllData.filter(s => !s['រូបថត'] || s['រូបថត'] === 'n/a' || s['រូបថត'] === "");
-            updateMissingBadge(pendingList.length);
-            document.getElementById('filterCount').innerText = `${pendingList.length} នាក់`;
-            filterPendingList(searchInput.value);
+        function processDataForTab() {
+            if (currentTab === 'missing') {
+                // Filter: No Photo
+                pendingList = cachedAllData.filter(s => !s['រូបថត'] || s['រូបថត'] === 'n/a' || s['រូបថត'] === "");
+                updateMissingBadge(pendingList.length);
+                const filterCount = document.getElementById('filterCount');
+                if(filterCount) filterCount.innerText = `${pendingList.length} នាក់`;
+            } else if (currentTab === 'delete') {
+                // Filter: Has Photo (so we can delete it) - or show all
+                // Show all for search, but emphasize those with photos
+                pendingList = cachedAllData; 
+            }
+            filterCachedList(searchInput.value);
         }
 
-        function filterPendingList(query) {
-            resultsArea.innerHTML = '';
-            const filtered = pendingList.filter(s => {
+        function filterCachedList(query) {
+            if(resultsArea) resultsArea.innerHTML = '';
+            
+            // Filter list based on search query
+            let filtered = pendingList;
+            if (query) {
                 const searchStr = query.toLowerCase();
-                const idMatch = s.id.toString().includes(searchStr);
-                const nameMatch = (s['ឈ្មោះ'] || "").toLowerCase().includes(searchStr);
-                return idMatch || nameMatch;
-            });
+                filtered = pendingList.filter(s => {
+                    const idMatch = s.id.toString().includes(searchStr);
+                    const nameMatch = (s['ឈ្មោះ'] || "").toLowerCase().includes(searchStr);
+                    return idMatch || nameMatch;
+                });
+            }
+            // Logic change: Don't hide results if query is empty in delete/missing modes.
+            // Just show the list.
 
             if (filtered.length === 0) {
-                resultsArea.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">រកមិនឃើញក្នុងបញ្ជីនេះទេ</div>`;
+                showNoData();
                 return;
             }
-            filtered.forEach(student => {
+            
+            // In Delete Tab, sort those with photos to top if filtering
+            if (currentTab === 'delete') {
+                filtered.sort((a, b) => {
+                    const aHas = (a['រូបថត'] && a['រូបថត'] !== 'n/a');
+                    const bHas = (b['រូបថត'] && b['រូបថត'] !== 'n/a');
+                    return bHas - aHas; 
+                });
+            }
+
+            filtered.slice(0, 50).forEach(student => { // Limit render for perf
                 resultsArea.appendChild(createStudentCard(student));
             });
         }
 
-        // ==========================================
-        // COMPACT UI COMPONENTS
-        // ==========================================
+        // --- UI CARD CREATION ---
         function createStudentCard(data) {
             const hasImage = data['រូបថត'] && data['រូបថត'] !== "" && data['រូបថត'] !== "n/a";
             const imageUrl = hasImage ? data['រូបថត'] : "https://via.placeholder.com/150/e2e8f0/94a3b8?text=No+Img";
             
-            // Status Styling - UPDATED for "Active" with checkmark
             const statusColor = hasImage ? "bg-green-100 text-green-700 border-green-200" : "bg-red-50 text-red-600 border-red-100";
-            const statusText = hasImage ? "Active" : "ត្រូវថត (Pending)";
+            const statusText = hasImage ? "Active" : "Pending";
             const statusIcon = hasImage ? "fa-check-circle" : "fa-exclamation-circle";
 
             const div = document.createElement('div');
-            // COMPACT STYLES HERE: p-3, gap-3, smaller height
-            div.className = "bg-white rounded-xl p-3 shadow-sm border border-gray-100 flex items-center gap-3 transition-transform active:scale-[0.99]";
+            div.className = "bg-white rounded-xl p-3 shadow-sm border border-gray-100 flex items-center gap-3 transition-transform active:scale-[0.99] animate-fade-in-up";
+            
+            let actionButton = '';
+
+            // LOGIC FOR BUTTONS BASED ON TAB
+            if (currentTab === 'delete') {
+                // DELETE MODE: Show Trash button ONLY if image exists
+                if (hasImage) {
+                    actionButton = `
+                    <button onclick="confirmDeleteModal('${data.id}', '${data['ឈ្មោះ']}')" class="shrink-0 w-10 h-10 bg-red-100 text-red-600 rounded-full flex items-center justify-center hover:bg-red-200 transition shadow-sm">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>`;
+                } else {
+                    actionButton = `<div class="shrink-0 w-10 h-10 flex items-center justify-center text-gray-300"><i class="fas fa-ban"></i></div>`;
+                }
+            } else {
+                // HOME/MISSING MODE: Show Camera if no image
+                if (!hasImage) {
+                    actionButton = `
+                    <button onclick="openCamera('${data.id}')" class="shrink-0 w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-100 transition shadow-sm">
+                        <i class="fas fa-camera"></i>
+                    </button>`;
+                }
+            }
+
             div.innerHTML = `
-                <div class="relative shrink-0 group" onclick="${!hasImage ? `openCamera('${data.id}')` : ''}">
-                    <!-- Smaller Image (w-12 h-12) -->
+                <div class="relative shrink-0" onclick="${!hasImage && currentTab !== 'delete' ? `openCamera('${data.id}')` : ''}">
                     <img src="${imageUrl}" class="w-12 h-12 rounded-full object-cover border-2 ${hasImage ? 'border-green-400' : 'border-red-300'}">
-                    ${!hasImage ? `<div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center cursor-pointer backdrop-blur-[1px] animate-pulse"><i class="fas fa-camera text-white text-xs"></i></div>` : ''}
+                    ${!hasImage && currentTab !== 'delete' ? `<div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center cursor-pointer backdrop-blur-[1px] animate-pulse"><i class="fas fa-camera text-white text-xs"></i></div>` : ''}
                 </div>
                 <div class="flex-grow min-w-0">
-                    <div class="flex justify-between items-start">
-                        <!-- Compact Text -->
-                        <h3 class="font-bold text-gray-800 text-base truncate leading-tight">${data['ឈ្មោះ'] || "Unknown"}</h3>
-                        <!-- EDIT BUTTON REMOVED -->
-                    </div>
+                    <h3 class="font-bold text-gray-800 text-base truncate leading-tight">${data['ឈ្មោះ'] || "Unknown"}</h3>
                     <p class="text-gray-500 text-xs mb-1.5 truncate">${data['ជំនាញ'] || "N/A"}</p>
                     <div class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${statusColor}">
-                        <i class="fas ${statusIcon} mr-1.5"></i>${statusText}
+                        <i class="fas ${statusIcon} mr-1"></i>${statusText}
                         <span class="ml-1.5 text-gray-400 font-mono opacity-70">#${data.id}</span>
                     </div>
                 </div>
-                ${!hasImage ? `<button onclick="openCamera('${data.id}')" class="shrink-0 w-8 h-8 bg-red-50 text-red-500 rounded-full flex items-center justify-center hover:bg-red-100"><i class="fas fa-camera text-sm"></i></button>` : ''}
+                ${actionButton}
             `;
             return div;
         }
 
-        // ==========================================
-        // FOOTER TABS LOGIC
-        // ==========================================
+        // --- TAB SWITCHING ---
         function switchTab(tab) {
-            const tabHome = document.getElementById('tabHome');
-            const tabMissing = document.getElementById('tabMissing');
-            const filterBanner = document.getElementById('filterBanner');
+            currentTab = tab;
             
-            tabHome.className = "flex flex-col items-center justify-center w-full h-full relative group text-blue-600 transition-colors";
-            tabHome.querySelector('div:last-child').classList.add('hidden');
-            tabMissing.className = "flex flex-col items-center justify-center w-full h-full relative group text-gray-400 hover:text-gray-600 transition-colors";
-            tabMissing.querySelector('div:last-child').classList.add('hidden');
+            // UI Reset
+            document.querySelectorAll('footer button').forEach(btn => {
+                btn.className = "flex flex-col items-center justify-center w-full h-full text-gray-400 relative group transition-colors hover:text-gray-600";
+                const indicator = btn.querySelector('.indicator');
+                if(indicator) indicator.classList.add('hidden');
+                
+                const iconContainer = btn.querySelector('.icon-container');
+                if(iconContainer) iconContainer.classList.remove('text-blue-600', 'text-red-500');
+            });
+
+            // Active State Logic
+            const activeBtn = document.getElementById(tab === 'home' ? 'tabHome' : tab === 'missing' ? 'tabMissing' : 'tabDelete');
+            const colorClass = tab === 'delete' ? 'text-red-500' : 'text-blue-600';
+            const bgClass = tab === 'delete' ? 'bg-red-600' : 'bg-blue-600';
+            
+            if(activeBtn) {
+                activeBtn.className = `flex flex-col items-center justify-center w-full h-full ${colorClass} relative group transition-colors`;
+                const indicator = activeBtn.querySelector('.indicator');
+                if(indicator) {
+                    indicator.classList.remove('hidden');
+                    indicator.className = `absolute top-0 w-8 h-0.5 ${bgClass} rounded-b-lg indicator`;
+                }
+            }
+            
+            // Content Logic
+            searchInput.value = '';
+            if(resultsArea) resultsArea.innerHTML = '';
+            
+            const filterBanner = document.getElementById('filterBanner');
+            if(filterBanner) filterBanner.classList.add('hidden');
+            
+            const emptyState = document.getElementById('emptyState');
+            if(emptyState) emptyState.classList.remove('hidden');
+            
+            const mainNav = document.getElementById('mainNav');
+            if(mainNav) mainNav.className = `bg-gradient-to-r ${tab === 'delete' ? 'from-red-700 to-red-500' : 'from-blue-700 to-blue-500'} shadow-lg sticky top-0 z-40 transition-colors duration-300`;
 
             if (tab === 'home') {
-                isMissingTab = false;
-                searchInput.value = '';
                 searchInput.placeholder = "ស្វែងរកអត្តលេខ (ឧ. 123)...";
-                tabHome.className = "flex flex-col items-center justify-center w-full h-full relative group text-blue-600 transition-colors";
-                tabHome.querySelector('div:last-child').classList.remove('hidden');
-                filterBanner.classList.add('hidden');
-                resultsArea.innerHTML = '';
-                emptyState.classList.remove('hidden');
-                resultsArea.appendChild(emptyState);
-
             } else if (tab === 'missing') {
-                isMissingTab = true;
-                searchInput.value = '';
                 searchInput.placeholder = "ស្វែងរក (ឈ្មោះ/លេខ)...";
-                tabMissing.className = "flex flex-col items-center justify-center w-full h-full relative group text-red-500 transition-colors";
-                tabMissing.querySelector('div:last-child').classList.remove('hidden');
-                filterBanner.classList.remove('hidden');
-                fetchAllDataForPending();
+                if(filterBanner) filterBanner.classList.remove('hidden');
+                const filterText = document.getElementById('filterText');
+                if(filterText) filterText.innerText = "បញ្ជីអ្នកដែលគ្មានរូបថត (Missing Photos)";
+                fetchAllData();
+            } else if (tab === 'delete') {
+                searchInput.placeholder = "ស្វែងរកដើម្បីលុប (Search to Delete)...";
+                fetchAllData();
+            }
+        }
+
+        // --- DELETE LOGIC ---
+        function confirmDeleteModal(id, name) {
+            activeStudentId = id;
+            activeStudentName = name;
+            const delName = document.getElementById('delStudentName');
+            if(delName) delName.innerText = name;
+            const delModal = document.getElementById('deleteModal');
+            if(delModal) delModal.classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            const delModal = document.getElementById('deleteModal');
+            if(delModal) delModal.classList.add('hidden');
+        }
+
+        function confirmDelete() {
+            if (!activeStudentId) return;
+            
+            // Update Firebase
+            db.ref('students/' + activeStudentId).update({ 'រូបថត': "" }).then(() => {
+                closeDeleteModal();
+                showSuccessModal();
+                updateCache(activeStudentId, "");
+            }).catch(err => {
+                alert("Error deleting: " + err);
+            });
+        }
+
+        function showSuccessModal() {
+            const modal = document.getElementById('successModal');
+            if(modal) {
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    // Refresh View
+                    if (currentTab === 'delete') filterCachedList(searchInput.value);
+                }, 1500);
+            }
+        }
+
+        // --- CAMERA LOGIC ---
+        function openCamera(id) {
+            activeStudentId = id;
+            const camModal = document.getElementById('cameraModal');
+            if(camModal) camModal.classList.remove('hidden');
+            startCamera();
+        }
+
+        function startCamera() {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(stream => { 
+                videoStream = stream; 
+                const video = document.getElementById('videoFeed');
+                if(video) {
+                    video.srcObject = stream; 
+                    applyMirror();
+                }
+            })
+            .catch(err => { alert("Camera Error: " + err); closeCamera(); });
+        }
+
+        function toggleMirror() {
+            isMirrored = !isMirrored;
+            applyMirror();
+        }
+
+        function applyMirror() {
+            const video = document.getElementById('videoFeed');
+            if(video) {
+                if (isMirrored) {
+                    video.classList.add('mirror-active');
+                    video.classList.remove('mirror-inactive');
+                } else {
+                    video.classList.add('mirror-inactive');
+                    video.classList.remove('mirror-active');
+                }
+            }
+        }
+
+        function closeCamera() {
+            if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+            const camModal = document.getElementById('cameraModal');
+            if(camModal) camModal.classList.add('hidden');
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('videoFeed');
+            const canvas = document.getElementById('canvas');
+            
+            if(!video || !canvas) return;
+
+            // Square Crop Logic
+            const size = Math.min(video.videoWidth, video.videoHeight);
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            // Calculate center crop
+            const startX = (video.videoWidth - size) / 2;
+            const startY = (video.videoHeight - size) / 2;
+
+            if (isMirrored) {
+                ctx.translate(size, 0);
+                ctx.scale(-1, 1);
+            }
+            
+            ctx.drawImage(video, startX, startY, size, size, 0, 0, size, size);
+            
+            capturedBlob = canvas.toDataURL('image/jpeg');
+            closeCamera();
+            const previewImage = document.getElementById('previewImage');
+            if(previewImage) previewImage.src = capturedBlob;
+            const previewModal = document.getElementById('previewModal');
+            if(previewModal) previewModal.classList.remove('hidden');
+        }
+
+        // --- UPLOAD & SAVE ---
+        function retakePhoto() {
+            const previewModal = document.getElementById('previewModal');
+            if(previewModal) previewModal.classList.add('hidden');
+            openCamera(activeStudentId);
+        }
+        function closePreview() { 
+            const previewModal = document.getElementById('previewModal');
+            if(previewModal) previewModal.classList.add('hidden'); 
+        }
+        
+        function uploadPhoto() {
+            if (!capturedBlob) return;
+            const overlay = document.getElementById('uploadingOverlay');
+            if(overlay) overlay.classList.remove('hidden');
+            
+            const formData = new FormData();
+            formData.append('file', capturedBlob);
+            formData.append('upload_preset', CLOUDINARY_PRESET);
+            
+            fetch(CLOUDINARY_URL, { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => { if (data.secure_url) saveToFirebase(data.secure_url); })
+            .catch(err => { 
+                alert("Upload Failed"); 
+                if(overlay) overlay.classList.add('hidden'); 
+            });
+        }
+
+        function saveToFirebase(url) {
+            db.ref('students/' + activeStudentId).update({ 'រូបថត': url }).then(() => {
+                const overlay = document.getElementById('uploadingOverlay');
+                if(overlay) overlay.classList.add('hidden');
+                
+                const previewModal = document.getElementById('previewModal');
+                if(previewModal) previewModal.classList.add('hidden');
+                
+                showSuccessModal();
+                updateCache(activeStudentId, url);
+            });
+        }
+
+        // --- HELPER ---
+        function updateCache(id, url) {
+            // Update local cache to reflect changes immediately
+            if (cachedAllData) {
+                const idx = cachedAllData.findIndex(s => s.id === id);
+                if (idx !== -1) cachedAllData[idx]['រូបថត'] = url;
+            }
+            
+            if (currentTab === 'home') {
+                handleServerSearch(searchInput.value);
+            } else {
+                processDataForTab();
             }
         }
 
         function updateMissingBadge(count) {
             const badge = document.getElementById('missingBadge');
-            if (count > 0) {
+            if(badge) {
                 badge.innerText = count;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
+                badge.classList.toggle('hidden', count === 0);
             }
         }
 
-        // ==========================================
-        // CAMERA LOGIC
-        // ==========================================
-        // EDIT LOGIC REMOVED
-
-        function openCamera(id) {
-            activeStudentId = id;
-            document.getElementById('cameraModal').classList.remove('hidden');
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                .then(stream => { videoStream = stream; document.getElementById('videoFeed').srcObject = stream; })
-                .catch(err => { alert("Camera Error"); closeCamera(); });
+        function showNoData() {
+            if(resultsArea) resultsArea.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">មិនមានទិន្នន័យ (No Data)</div>`;
         }
-        function closeCamera() {
-            if (videoStream) videoStream.getTracks().forEach(t => t.stop());
-            document.getElementById('cameraModal').classList.add('hidden');
-        }
-        function capturePhoto() {
-            const video = document.getElementById('videoFeed');
-            const canvas = document.getElementById('canvas');
-            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0);
-            capturedBlob = canvas.toDataURL('image/jpeg');
-            closeCamera();
-            document.getElementById('previewImage').src = capturedBlob;
-            document.getElementById('previewModal').classList.remove('hidden');
-        }
-        function retakePhoto() {
-            document.getElementById('previewModal').classList.add('hidden');
-            openCamera(activeStudentId);
-        }
-        function closePreview() { document.getElementById('previewModal').classList.add('hidden'); }
-        function uploadPhoto() {
-            if (!capturedBlob) return;
-            document.getElementById('uploadingOverlay').classList.remove('hidden');
-            const formData = new FormData();
-            formData.append('file', capturedBlob);
-            formData.append('upload_preset', CLOUDINARY_PRESET);
-            fetch(CLOUDINARY_URL, { method: 'POST', body: formData })
-            .then(res => res.json())
-            .then(data => { if (data.secure_url) saveToFirebase(data.secure_url); })
-            .catch(err => { alert("Upload Failed"); document.getElementById('uploadingOverlay').classList.add('hidden'); });
-        }
-        function saveToFirebase(url) {
-            db.ref('students/' + activeStudentId).update({ 'រូបថត': url }).then(() => {
-                document.getElementById('uploadingOverlay').classList.add('hidden');
-                document.getElementById('previewModal').classList.add('hidden');
-                if (isMissingTab) {
-                    const idx = cachedAllData.findIndex(s => s.id === activeStudentId);
-                    if(idx !== -1) cachedAllData[idx]['រូបថត'] = url;
-                    processPendingData();
-                } else {
-                    handleServerSearch(searchInput.value);
-                }
-            });
+        function resetResults() {
+            if(resultsArea) resultsArea.innerHTML = '';
+            if(emptyState) emptyState.classList.remove('hidden');
         }
     </script>
 </body>
