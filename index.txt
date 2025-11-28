@@ -1,104 +1,286 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="km">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Profile & Camera</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ប្រព័ន្ធគ្រប់គ្រងសិស្ស - Student Database</title>
     
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Poppins:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Face API (Optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Poppins:wght@300;400;600&display=swap');
-        body { font-family: 'Poppins', 'Battambang', sans-serif; background: #f3f4f6; }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        body {
+            font-family: 'Battambang', 'Poppins', sans-serif;
+            background-color: #f3f4f6; /* Light gray bg */
+            -webkit-tap-highlight-color: transparent;
         }
-        .loader { border-top-color: #3498db; -webkit-animation: spinner 1.5s linear infinite; animation: spinner 1.5s linear infinite; }
-        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        /* Animations */
+        @keyframes fade-in-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in-up { animation: fade-in-up 0.3s ease-out forwards; }
+        
+        @keyframes scale-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .animate-scale-in { animation: scale-in 0.2s ease-out forwards; }
+
+        .loader {
+            border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #3b82f6;
+            width: 24px; height: 24px; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .glass { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(12px); border-top: 1px solid rgba(0,0,0,0.05); }
+        .mirror-active { transform: scaleX(-1); }
+        .mirror-inactive { transform: scaleX(1); }
+        
+        /* Pro Card Styling */
+        .pro-card {
+            background: white;
+            border-radius: 16px; /* Rounded corners */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.02);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .pro-card:active { transform: scale(0.98); }
+        
+        /* Header Gradient */
+        .header-gradient {
+            background: linear-gradient(135deg, #4285F4 0%, #3B82F6 100%);
+        }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-500 to-purple-600">
+<body class="bg-gray-100 min-h-screen flex flex-col"> 
 
-    <div class="glass-card w-full max-w-md rounded-2xl p-6 relative overflow-hidden">
-        
-        <h1 class="text-2xl font-bold text-gray-800 text-center mb-6">Student Database</h1>
-
-        <div class="mb-6 relative">
-            <input type="text" id="searchInput" placeholder="Enter Student ID (e.g. 111)" 
-                class="w-full pl-4 pr-12 py-3 rounded-xl border-none outline-none focus:ring-2 focus:ring-blue-400 shadow-sm bg-gray-50 text-gray-700 font-bold transition-all">
-            <button onclick="searchStudent()" class="absolute right-2 top-2 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors">
-                <i class="fas fa-search"></i>
-            </button>
-        </div>
-
-        <div id="loading" class="hidden flex justify-center py-4">
-            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-8 w-8"></div>
-        </div>
-
-        <div id="profileCard" class="hidden transition-all duration-500 transform translate-y-4">
-            
-            <div class="flex justify-center mb-4 relative">
-                <div class="w-32 h-32 rounded-full border-4 border-white shadow-lg overflow-hidden relative bg-gray-200 group">
-                    <img id="displayImage" src="" alt="Profile" class="w-full h-full object-cover">
-                    
-                    <div id="cameraOverlay" class="absolute inset-0 bg-black bg-opacity-40 flex flex-col items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity hidden">
-                        <i class="fas fa-camera text-white text-2xl mb-1"></i>
-                        <span class="text-white text-xs">Tap to Add</span>
+    <!-- 1. LOGIN SCREEN -->
+    <div id="loginScreen" class="fixed inset-0 z-[100] bg-gray-900 flex flex-col items-center justify-center p-6 text-white">
+        <div class="max-w-sm w-full bg-gray-800 rounded-2xl p-8 border border-gray-700 shadow-2xl relative overflow-hidden">
+            <div class="absolute inset-0 opacity-5" style="background-image: radial-gradient(#4b5563 1px, transparent 1px); background-size: 20px 20px;"></div>
+            <div class="relative z-10 text-center">
+                <div class="w-20 h-20 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-blue-500/30">
+                    <i class="fas fa-user-shield text-3xl text-blue-400"></i>
+                </div>
+                <h2 class="text-2xl font-bold font-mono tracking-tighter mb-1">ADMIN LOGIN</h2>
+                <p class="text-gray-400 text-xs font-mono mb-8">SECURE SYSTEM ACCESS</p>
+                <div class="relative mb-6 text-left">
+                    <label class="text-[10px] font-bold text-gray-500 uppercase font-mono ml-1">Admin ID</label>
+                    <div class="flex items-center bg-gray-900 rounded-xl border border-gray-600 focus-within:border-blue-500 transition-colors mt-1">
+                        <div class="pl-4 text-gray-500"><i class="fas fa-fingerprint"></i></div>
+                        <input type="number" id="adminIdInput" class="bg-transparent border-none text-white w-full px-4 py-3 focus:outline-none font-mono font-bold" placeholder="Enter ID (250)">
                     </div>
                 </div>
-                <div id="statusBadge" class="absolute bottom-0 bg-green-500 text-white text-xs px-2 py-1 rounded-full shadow-md">
-                    Active
-                </div>
+                <button onclick="initiateAdminLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/20 transition-all font-mono">
+                    LOGIN
+                </button>
             </div>
-
-            <div class="text-center space-y-2">
-                <h2 id="dispName" class="text-2xl font-bold text-gray-800">Student Name</h2>
-                <p class="text-sm text-gray-500 font-mono bg-gray-100 inline-block px-3 py-1 rounded-lg">ID: <span id="dispID">---</span></p>
-                <div class="mt-4">
-                    <span class="text-xs text-gray-400 uppercase tracking-wider">Skill / ជំនាញ</span>
-                    <p id="dispSkill" class="text-lg font-medium text-blue-600">---</p>
-                </div>
-            </div>
-
-            <button id="btnOpenCamera" onclick="openCameraModal()" class="w-full mt-6 bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all hidden">
-                <i class="fas fa-camera mr-2"></i> Take Photo
-            </button>
-        </div>
-
-        <div id="notFound" class="hidden text-center text-red-500 mt-4 font-semibold">
-            Student not found.
         </div>
     </div>
 
-    <div id="cameraModal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex flex-col items-center justify-center p-4">
-        <div class="relative w-full max-w-sm bg-black rounded-2xl overflow-hidden shadow-2xl border border-gray-700">
-            <video id="videoFeed" autoplay playsinline class="w-full h-64 object-cover transform -scale-x-100"></video>
-            <canvas id="canvas" class="hidden"></canvas>
+    <!-- 2. MAIN APP -->
+    <div id="appContainer" class="hidden flex-col min-h-screen pb-24">
+        
+        <!-- HEADER (Blue Pro Style) -->
+        <nav class="header-gradient shadow-lg sticky top-0 z-40 transition-all duration-500 ease-in-out" id="mainNav">
+            <div class="max-w-2xl mx-auto px-4 py-4 flex items-center justify-start gap-4"> 
+                <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg p-1 shrink-0">
+                    <img src="https://i.postimg.cc/FHBn0Fdf/di3-copy.png" alt="Logo" class="w-full h-full object-contain">
+                </div>
+                <div class="text-white">
+                    <h1 class="font-bold text-xl leading-none tracking-wide" style="font-family: 'Battambang'">បញ្ជីឈ្មោះសិស្ស</h1>
+                    <p class="text-blue-100 text-[10px] uppercase tracking-wider font-bold opacity-90 mt-0.5">Student Database</p>
+                </div>
+            </div>
+        </nav>
+
+        <!-- CONTENT -->
+        <main class="flex-grow max-w-2xl mx-auto w-full p-4 space-y-4">
             
-            <div class="p-4 flex justify-around items-center bg-gray-900">
-                <button onclick="closeCamera()" class="text-white p-3 hover:text-red-400">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-                <button onclick="capturePhoto()" class="bg-white rounded-full p-1 border-4 border-gray-300 transition-transform active:scale-95">
-                    <div class="w-12 h-12 bg-red-500 rounded-full"></div>
-                </button>
-                <button class="text-gray-500 p-3">
-                    <i class="fas fa-sync text-xl"></i> </button>
+            <!-- ADMIN PANEL -->
+            <div id="adminPanel" class="hidden bg-gray-800 text-white rounded-2xl p-5 shadow-xl border border-gray-700 animate-fade-in-up">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h2 class="text-lg font-bold font-mono text-green-400 tracking-wide">ADMIN CONSOLE</h2>
+                        <p class="text-xs text-gray-400 font-mono mt-1">Logged as: <span id="adminNameDisplay" class="text-white">Unknown</span></p>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg px-3 py-2 text-center">
+                        <div class="text-xl font-bold font-mono text-white" id="adminTotalCaptures">0</div>
+                        <div class="text-[8px] text-gray-400 uppercase tracking-widest">Captures</div>
+                    </div>
+                </div>
+                <h4 class="text-[10px] font-bold text-gray-500 uppercase mb-3 font-mono border-b border-gray-700 pb-2">Recent Logs</h4>
+                <ul id="adminLogList" class="space-y-3 text-xs font-mono text-gray-300 max-h-48 overflow-y-auto custom-scrollbar">
+                    <li class="text-center text-gray-600 italic py-2">No activity recorded.</li>
+                </ul>
             </div>
-        </div>
-        <p class="text-white mt-4 text-sm animate-pulse">Align face and tap button</p>
+
+            <!-- SEARCH BAR -->
+            <div class="bg-white rounded-2xl shadow-sm p-1.5 sticky top-[80px] z-30 transition-all duration-300" id="searchContainer">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <input type="text" id="searchInput" 
+                        class="block w-full pl-11 pr-4 py-3 bg-gray-50 border-none rounded-xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-0 text-base font-medium" 
+                        placeholder="Search Name or ID..."
+                        autocomplete="off">
+                    <div id="searchLoader" class="absolute inset-y-0 right-0 pr-4 flex items-center hidden">
+                        <div class="loader !w-5 !h-5 !border-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LIST HEADER / COUNTER -->
+            <div id="listHeader" class="flex justify-between items-end px-1 mt-2">
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-widest" id="listTitle">ALL STUDENTS</span>
+                <span class="text-[10px] bg-white border border-gray-200 text-gray-500 px-3 py-1 rounded-full font-mono font-bold shadow-sm" id="totalStudentCount">Total: ...</span>
+            </div>
+
+            <!-- ALERT BANNER -->
+            <div id="filterBanner" class="hidden bg-orange-50 border-l-4 border-orange-400 rounded-r-xl p-3 flex items-center justify-between animate-fade-in-up shadow-sm">
+                <div class="flex items-center text-orange-800 gap-3">
+                    <div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600"><i class="fas fa-exclamation"></i></div>
+                    <div>
+                        <p class="font-bold text-xs text-orange-900 uppercase tracking-wide">Status</p>
+                        <p class="text-xs text-orange-700" id="filterText">Missing Photos</p>
+                    </div>
+                </div>
+                <span class="bg-orange-100 text-orange-600 text-xs font-bold px-3 py-1 rounded-lg" id="filterCount">0</span>
+            </div>
+
+            <!-- STUDENT LIST -->
+            <div id="resultsArea" class="space-y-3 pb-4">
+                <div id="emptyState" class="text-center py-20 opacity-50">
+                    <div class="loader mx-auto"></div>
+                    <p class="text-gray-400 text-xs font-bold uppercase mt-4 tracking-widest">Loading Database...</p>
+                </div>
+            </div>
+            
+            <div id="fullPageLoader" class="hidden flex justify-center py-10">
+                <div class="loader"></div>
+            </div>
+        </main>
+
+        <!-- Back To Top -->
+        <button id="backToTopBtn" onclick="scrollToTop()" class="fixed bottom-24 right-5 z-30 bg-white text-blue-600 w-12 h-12 flex items-center justify-center rounded-full shadow-lg border border-gray-100 hidden transition-all duration-300 hover:scale-110 active:scale-90">
+            <i class="fas fa-arrow-up"></i>
+        </button>
+
+        <!-- 4. FOOTER NAVIGATION -->
+        <footer class="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 glass pb-safe h-[72px]">
+            <div class="grid grid-cols-4 h-full max-w-2xl mx-auto">
+                <!-- Home -->
+                <button onclick="switchTab('home')" id="tabHome" class="flex flex-col items-center justify-center text-blue-600 relative group">
+                    <div class="p-1.5 rounded-xl transition-all duration-200 group-active:scale-95 icon-container bg-blue-50">
+                        <i class="fas fa-search text-lg"></i>
+                    </div>
+                    <span class="text-[10px] font-bold mt-1 tracking-tight">Search</span>
+                </button>
+
+                <!-- Pending -->
+                <button onclick="switchTab('missing')" id="tabMissing" class="flex flex-col items-center justify-center text-gray-400 relative group hover:text-gray-600">
+                    <div class="relative p-1.5 rounded-xl transition-all duration-200 group-active:scale-95 icon-container">
+                        <i class="fas fa-camera text-lg"></i>
+                        <span id="missingBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full ring-2 ring-white shadow-sm">0</span>
+                    </div>
+                    <span class="text-[10px] font-bold mt-1 tracking-tight">Pending</span>
+                </button>
+
+                <!-- Delete -->
+                <button onclick="switchTab('delete')" id="tabDelete" class="flex flex-col items-center justify-center text-gray-400 relative group hover:text-red-500">
+                    <div class="p-1.5 rounded-xl transition-all duration-200 group-active:scale-95 icon-container">
+                        <i class="fas fa-trash-alt text-lg"></i>
+                    </div>
+                    <span class="text-[10px] font-bold mt-1 tracking-tight">Delete</span>
+                </button>
+
+                <!-- Admin -->
+                <button onclick="switchTab('admin')" id="tabAdmin" class="flex flex-col items-center justify-center text-gray-400 relative group hover:text-green-600">
+                    <div class="p-1.5 rounded-xl transition-all duration-200 group-active:scale-95 icon-container">
+                        <i class="fas fa-user-circle text-lg"></i>
+                    </div>
+                    <span class="text-[10px] font-bold mt-1 tracking-tight">Admin</span>
+                </button>
+            </div>
+        </footer>
     </div>
 
+    <!-- Modals (Camera, Preview, Delete, Success) -->
+    <!-- Camera Modal -->
+    <div id="cameraModal" class="fixed inset-0 bg-black z-50 hidden flex flex-col justify-center items-center animate-scale-in">
+        <div class="absolute top-0 w-full p-6 flex justify-between items-center z-20">
+            <button onclick="closeCamera()" class="text-white bg-white/20 backdrop-blur-md p-3 rounded-full hover:bg-white/30 transition"><i class="fas fa-times"></i></button>
+            <span class="text-white font-medium text-xs bg-black/50 px-4 py-1.5 rounded-full backdrop-blur-md border border-white/10">Square Mode</span>
+            <div class="w-10"></div>
+        </div>
+        <div class="relative w-full max-w-md aspect-square bg-black overflow-hidden shadow-2xl border-y border-white/10">
+            <video id="videoFeed" autoplay playsinline class="w-full h-full object-cover mirror-active"></video>
+            <canvas id="canvas" class="hidden"></canvas>
+            <div class="absolute inset-0 pointer-events-none opacity-20">
+                <div class="w-full h-1/3 border-b border-white"></div><div class="w-full h-1/3 border-b border-white top-1/3 absolute"></div>
+                <div class="h-full w-1/3 border-r border-white absolute top-0 left-0"></div><div class="h-full w-1/3 border-r border-white absolute top-0 left-1/3"></div>
+            </div>
+        </div>
+        <div class="absolute bottom-0 w-full p-8 bg-gradient-to-t from-black via-black/80 to-transparent flex justify-around items-center z-20">
+            <button onclick="toggleMirror()" class="text-white/80 p-4 hover:text-white transition"><div class="flex flex-col items-center gap-1"><i class="fas fa-exchange-alt text-xl"></i><span class="text-[9px] uppercase tracking-widest">Flip</span></div></button>
+            <button onclick="capturePhoto()" class="w-20 h-20 bg-white rounded-full border-4 border-gray-400 flex items-center justify-center transform active:scale-90 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)]"><div class="w-16 h-16 bg-white rounded-full border border-gray-300"></div></button>
+            <button class="text-white/30 p-4 cursor-not-allowed"><i class="fas fa-images text-xl"></i></button>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-xs rounded-3xl overflow-hidden shadow-2xl flex flex-col animate-scale-in">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50"><h3 class="font-bold text-gray-800">Preview Photo</h3><button onclick="closePreview()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button></div>
+            <div class="p-6 bg-gray-100 flex items-center justify-center"><img id="previewImage" src="" class="w-full aspect-square object-cover shadow-lg rounded-2xl border-4 border-white"></div>
+            <div class="p-4 space-y-3 bg-white border-t">
+                <button onclick="uploadPhoto()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 transition-all"><i class="fas fa-check-circle"></i> Confirm & Save</button>
+                <button onclick="retakePhoto()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3.5 rounded-xl transition-all">Retake</button>
+            </div>
+            <div id="uploadingOverlay" class="absolute inset-0 bg-white/95 hidden flex flex-col items-center justify-center z-10"><div class="loader"></div><p class="text-gray-500 font-bold text-sm mt-3 animate-pulse">Uploading...</p></div>
+        </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div id="deleteModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-scale-in p-6 text-center">
+            <div class="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce"><i class="fas fa-trash-alt text-2xl"></i></div>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">Delete Photo?</h3>
+            <p class="text-gray-500 text-sm mb-6">Are you sure you want to delete the photo for <br><span id="delStudentName" class="font-bold text-gray-800"></span>?</p>
+            <div class="flex gap-3">
+                <button onclick="closeDeleteModal()" class="flex-1 py-3 rounded-xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 transition">Cancel</button>
+                <button onclick="confirmDelete()" class="flex-1 py-3 rounded-xl bg-red-600 text-white font-bold shadow-lg shadow-red-500/30 hover:bg-red-700 transition">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="fixed inset-0 bg-black/20 z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl px-8 py-6 shadow-2xl flex flex-col items-center animate-scale-in">
+            <div class="w-12 h-12 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-3"><i class="fas fa-check text-xl"></i></div>
+            <h3 class="font-bold text-gray-800">Success!</h3>
+        </div>
+    </div>
+
+    <!-- Firebase & Logic -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <script>
-        // --- 1. CONFIGURATION ---
-        
-        // YOUR FIREBASE CONFIG
+        // --- CONFIGURATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyAc2g-t9A7du3K_nI2fJnw_OGxhmLfpP6s",
             authDomain: "dilistname.firebaseapp.com",
@@ -109,152 +291,348 @@
             appId: "1:897983357871:web:42a046bc9fb3e0543dc55a",
             measurementId: "G-NQ798D9J6K"
         };
-        firebase.initializeApp(firebaseConfig);
+        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dttx1x743/image/upload";
+        const CLOUDINARY_PRESET = "difulllist"; 
+
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // YOUR CLOUDINARY CONFIG (REPLACE THESE!)
-        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME_HERE/image/upload";
-        const CLOUDINARY_UPLOAD_PRESET = "YOUR_UNSIGNED_PRESET_HERE"; 
+        let currentAdmin = { id: null, name: 'Unknown', verified: false };
+        let activeStudentId = null, activeStudentName = "", capturedBlob = null, videoStream = null;
+        let currentTab = 'home', cachedAllData = null, pendingList = [], isMirrored = true;
 
-        // --- 2. VARIABLES ---
-        let currentStudentId = null;
-        const video = document.getElementById('videoFeed');
-        const canvas = document.getElementById('canvas');
-        const defaultImage = "https://via.placeholder.com/150?text=n/a"; // n/a placeholder
+        // AUTH
+        const ALLOWED_ADMIN_IDS = ['250', '246', '249', '247', '273', '169'];
 
-        // --- 3. SEARCH FUNCTION ---
-        function searchStudent() {
-            const id = document.getElementById('searchInput').value.trim();
-            if(!id) return alert("Please enter an ID");
-
-            // UI Reset
-            document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('profileCard').classList.add('hidden');
-            document.getElementById('notFound').classList.add('hidden');
-
-            // Fetch from Firebase: students/{id}
-            db.ref('students/' + id).once('value').then((snapshot) => {
-                document.getElementById('loading').classList.add('hidden');
-                
+        function initiateAdminLogin() {
+            const inputId = document.getElementById('adminIdInput').value;
+            if (!inputId) return alert("Please enter an ID");
+            if (!ALLOWED_ADMIN_IDS.includes(inputId)) return alert("Access Denied.");
+            
+            db.ref('students/' + inputId).once('value').then(snapshot => {
                 if (snapshot.exists()) {
                     const data = snapshot.val();
-                    currentStudentId = id; // Save ID for later update
-                    renderProfile(data);
+                    currentAdmin.id = inputId;
+                    currentAdmin.name = data['ឈ្មោះ'] || `Admin ${inputId}`;
+                    completeLogin();
                 } else {
-                    document.getElementById('notFound').classList.remove('hidden');
+                    alert("ID not found in database.");
                 }
-            }).catch(error => {
-                console.error(error);
-                alert("Error connecting to database");
-                document.getElementById('loading').classList.add('hidden');
             });
         }
 
-        // --- 4. RENDER UI ---
-        function renderProfile(data) {
-            // Map Data (Khmer Fields)
-            document.getElementById('dispName').innerText = data['ឈ្មោះ'] || "Unknown";
-            document.getElementById('dispID').innerText = data['អត្តលេខ'] || currentStudentId;
-            document.getElementById('dispSkill').innerText = data['ជំនាញ'] || "General";
-
-            const imgUrl = data['រូបថត'];
-            const imgEl = document.getElementById('displayImage');
-            const btnCam = document.getElementById('btnOpenCamera');
-            const overlay = document.getElementById('cameraOverlay');
-
-            // Logic: If image exists, show it and hide camera button. If not, show n/a and show button.
-            if (imgUrl && imgUrl !== "n/a" && imgUrl !== "") {
-                imgEl.src = imgUrl;
-                btnCam.classList.add('hidden'); // Hide button
-                overlay.classList.add('hidden'); // Hide hover effect
-            } else {
-                imgEl.src = defaultImage;
-                btnCam.classList.remove('hidden'); // Show Capture Button
-                overlay.classList.remove('hidden'); // Enable hover effect
-            }
-
-            document.getElementById('profileCard').classList.remove('hidden');
+        function completeLogin() {
+            currentAdmin.verified = true;
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appContainer').classList.remove('hidden');
+            document.getElementById('appContainer').classList.add('flex');
+            document.getElementById('adminNameDisplay').innerText = currentAdmin.name;
+            loadAdminStats();
+            fetchAllData(); 
         }
 
-        // --- 5. CAMERA LOGIC ---
-        function openCameraModal() {
-            document.getElementById('cameraModal').classList.remove('hidden');
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                .then(stream => {
-                    video.srcObject = stream;
-                })
-                .catch(err => {
-                    alert("Camera access denied or not available");
-                    closeCamera();
+        function loadAdminStats() {
+            const adminIdString = String(currentAdmin.id);
+            db.ref('admin_logs').orderByChild('adminId').equalTo(adminIdString).limitToLast(20).on('value', snapshot => {
+                const list = document.getElementById('adminLogList');
+                if(!list) return;
+                list.innerHTML = '';
+                if (snapshot.exists()) {
+                    let logs = [];
+                    snapshot.forEach(child => logs.push({ key: child.key, ...child.val() }));
+                    logs.reverse().forEach(log => {
+                        const li = document.createElement('li');
+                        li.className = "flex justify-between items-center border-b border-slate-700/50 py-3 last:border-none group";
+                        
+                        const adminLabel = log.adminName ? `<span class="text-[9px] text-slate-500 block mt-0.5">By: ${log.adminName}</span>` : '';
+                        const idLabel = log.studentId ? `<span class="text-[10px] text-slate-400 ml-1">#${log.studentId}</span>` : '';
+
+                        li.innerHTML = `
+                            <div class="flex flex-col">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full flex-shrink-0"></span>
+                                    <span class="text-xs text-slate-200 font-medium">${log.studentName}</span>
+                                    ${idLabel}
+                                </div>
+                                ${adminLabel}
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-[10px] text-slate-500 font-mono">${new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                <button onclick="deleteLog('${log.key}')" class="text-slate-600 hover:text-red-400 transition-colors opacity-50 group-hover:opacity-100 p-1">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        `;
+                        list.appendChild(li);
+                    });
+                } else {
+                    list.innerHTML = '<li class="text-center text-slate-600 text-xs py-4 italic">No recent activity</li>';
+                }
+                
+                db.ref('admin_logs').orderByChild('adminId').equalTo(adminIdString).once('value').then(snap => {
+                    document.getElementById('adminTotalCaptures').innerText = snap.numChildren();
                 });
+            });
         }
 
-        function closeCamera() {
-            const stream = video.srcObject;
-            if (stream) {
-                const tracks = stream.getTracks();
-                tracks.forEach(track => track.stop());
+        function deleteLog(logId) {
+            if(confirm("Remove this log entry?")) {
+                db.ref('admin_logs/' + logId).remove().catch(err => alert("Error: " + err.message));
             }
-            document.getElementById('cameraModal').classList.add('hidden');
         }
 
-        // --- 6. CAPTURE & UPLOAD (The Magic) ---
-        function capturePhoto() {
-            // 1. Draw video frame to canvas
-            const context = canvas.getContext('2d');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        // TABS
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Safe UI Reset
+            const footerBtns = document.querySelectorAll('footer button');
+            if (footerBtns) {
+                footerBtns.forEach(btn => {
+                    const indicator = btn.querySelector('.indicator');
+                    if (indicator) indicator.classList.add('hidden');
+                    const icon = btn.querySelector('.icon-container');
+                    if (icon) icon.className = "p-1.5 rounded-xl transition-all duration-200 group-active:scale-95 icon-container";
+                });
+            }
 
-            // 2. Convert to Base64
-            const dataUrl = canvas.toDataURL('image/jpeg');
+            // Set Active
+            const btnMap = { 'home': 'tabHome', 'missing': 'tabMissing', 'delete': 'tabDelete', 'admin': 'tabAdmin' };
+            const activeBtn = document.getElementById(btnMap[tab]);
+            if (activeBtn) {
+                const indicator = activeBtn.querySelector('.indicator');
+                if (indicator) indicator.classList.remove('hidden');
+                const icon = activeBtn.querySelector('.icon-container');
+                const colors = { 'home': 'bg-blue-50 text-blue-600', 'missing': 'bg-slate-100 text-slate-800', 'delete': 'bg-red-50 text-red-500', 'admin': 'bg-green-50 text-green-600' };
+                if (icon) icon.className = `p-1.5 rounded-xl transition-all duration-200 group-active:scale-95 icon-container ${colors[tab]}`;
+            }
 
-            // 3. Stop Camera & Show Loading State
-            closeCamera();
-            document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('profileCard').classList.add('hidden');
+            // Header Style
+            const nav = document.getElementById('mainNav');
+            if(nav) {
+                nav.className = "shadow-md sticky top-0 z-40 transition-all duration-500 ease-in-out"; 
+                if (tab === 'delete') nav.classList.add('bg-gradient-to-r', 'from-red-600', 'to-red-500'); 
+                else if (tab === 'admin') nav.classList.add('bg-gray-900'); 
+                else nav.classList.add('header-gradient'); 
+            }
 
-            // 4. Upload to Cloudinary
-            uploadToCloudinary(dataUrl);
+            // Safe toggle views
+            const views = ['searchContainer', 'resultsArea', 'adminPanel', 'filterBanner', 'listHeader'];
+            views.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+
+            const searchInput = document.getElementById('searchInput');
+            if(searchInput) searchInput.value = '';
+
+            const searchContainer = document.getElementById('searchContainer');
+            const resultsArea = document.getElementById('resultsArea');
+            const adminPanel = document.getElementById('adminPanel');
+            const filterBanner = document.getElementById('filterBanner');
+            const listHeader = document.getElementById('listHeader');
+            const listTitle = document.getElementById('listTitle');
+            const filterText = document.getElementById('filterText');
+
+            if (tab === 'home') {
+                if(searchContainer) searchContainer.classList.remove('hidden');
+                if(resultsArea) resultsArea.classList.remove('hidden');
+                if(listHeader) listHeader.classList.remove('hidden');
+                if(searchInput) searchInput.placeholder = "Search Name or ID...";
+                if(listTitle) listTitle.innerText = "ALL STUDENTS";
+                processDataForTab();
+            } else if (tab === 'missing') {
+                if(searchContainer) searchContainer.classList.remove('hidden');
+                if(resultsArea) resultsArea.classList.remove('hidden');
+                if(filterBanner) filterBanner.classList.remove('hidden');
+                if(listHeader) listHeader.classList.remove('hidden');
+                if(searchInput) searchInput.placeholder = "Search Pending List...";
+                if(filterText) filterText.innerText = "Missing Photos";
+                if(listTitle) listTitle.innerText = "PENDING LIST";
+                processDataForTab(); 
+            } else if (tab === 'delete') {
+                if(searchContainer) searchContainer.classList.remove('hidden');
+                if(resultsArea) resultsArea.classList.remove('hidden');
+                if(listHeader) listHeader.classList.remove('hidden');
+                if(searchInput) searchInput.placeholder = "Search to Delete...";
+                if(listTitle) listTitle.innerText = "DELETE PHOTOS";
+                processDataForTab();
+            } else if (tab === 'admin') {
+                if(adminPanel) adminPanel.classList.remove('hidden');
+            }
         }
 
-        function uploadToCloudinary(base64Image) {
-            const formData = new FormData();
-            formData.append('file', base64Image);
-            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-            fetch(CLOUDINARY_URL, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if(data.secure_url) {
-                    updateFirebase(data.secure_url);
-                } else {
-                    alert("Upload failed");
-                    document.getElementById('loading').classList.add('hidden');
+        // DATA
+        function fetchAllData() {
+            if (cachedAllData) { processDataForTab(); return; }
+            const loader = document.getElementById('fullPageLoader');
+            if(loader) loader.classList.remove('hidden');
+            
+            db.ref('students').orderByKey().once('value').then(snapshot => {
+                if(loader) loader.classList.add('hidden');
+                cachedAllData = [];
+                if (snapshot.exists()) {
+                    snapshot.forEach(child => {
+                        cachedAllData.push({ id: child.key, ...child.val() });
+                    });
                 }
-            })
-            .catch(err => {
-                console.error(err);
-                alert("Error uploading image");
-                document.getElementById('loading').classList.add('hidden');
+                processDataForTab();
             });
         }
 
-        // --- 7. UPDATE FIREBASE ---
-        function updateFirebase(newImageUrl) {
-            db.ref('students/' + currentStudentId).update({
-                'រូបថត': newImageUrl
-            }).then(() => {
-                // Success! Refresh the view
-                alert("Photo saved successfully!");
-                searchStudent(); // Reload data
-            }).catch(error => {
-                alert("Failed to update database");
+        function processDataForTab() {
+            const missingCount = cachedAllData.filter(s => !s['រូបថត'] || s['រូបថត'] === 'n/a' || s['រូបថត'] === "").length;
+            
+            const badge = document.getElementById('missingBadge');
+            if(badge) { badge.innerText = missingCount; badge.classList.toggle('hidden', missingCount === 0); }
+            const cnt = document.getElementById('filterCount');
+            if(cnt) cnt.innerText = missingCount;
+
+            const totalCnt = document.getElementById('totalStudentCount');
+            if(totalCnt) totalCnt.innerText = `Total: ${cachedAllData.length}`;
+            
+            pendingList = [...cachedAllData];
+
+            if (currentTab === 'missing') {
+                pendingList.sort((a, b) => {
+                    const aM = !a['រូបថត'] || a['រូបថត'] === 'n/a' || a['រូបថត'] === "";
+                    const bM = !b['រូបថត'] || b['រូបថត'] === 'n/a' || b['រូបថត'] === "";
+                    return bM - aM; 
+                });
+            } else if (currentTab === 'delete') {
+                pendingList.sort((a, b) => {
+                    const aH = a['រូបថត'] && a['រូបថត'] !== 'n/a' && a['រូបថត'] !== "";
+                    const bH = b['រូបថត'] && b['រូបថត'] !== 'n/a' && b['រូបថត'] !== "";
+                    return bH - aH;
+                });
+            } else {
+                pendingList.sort((a, b) => a.id - b.id);
+            }
+            filterCachedList(""); 
+        }
+
+        function filterCachedList(query) {
+            const area = document.getElementById('resultsArea');
+            if(!area) return;
+            area.innerHTML = '';
+            
+            let filtered = pendingList;
+            if (query) {
+                const s = query.toLowerCase();
+                filtered = pendingList.filter(x => x.id.toString().includes(s) || (x['ឈ្មោះ']||"").toLowerCase().includes(s));
+            }
+
+            filtered.slice(0, 50).forEach(data => area.appendChild(createStudentCard(data)));
+            
+            if(filtered.length === 0) area.innerHTML = `<div class="text-center py-10 text-gray-400">No results found.</div>`;
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            filterCachedList(e.target.value.trim());
+        });
+
+        // UI CARD
+        function createStudentCard(data) {
+            const hasImage = data['រូបថត'] && data['រូបថត'] !== 'n/a' && data['រូបថត'] !== "";
+            const img = hasImage ? data['រូបថត'] : "https://via.placeholder.com/150/f1f5f9/94a3b8?text=No+Img";
+            const skill = data['ជំនាញ'] || "General";
+            
+            const div = document.createElement('div');
+            div.className = "pro-card rounded-2xl p-4 flex items-center gap-4 animate-fade-in-up transition-transform active:scale-[0.99] mb-3";
+            
+            let action = '';
+            if (currentTab === 'delete') {
+                if(hasImage) action = `<button onclick="confirmDeleteModal('${data.id}', '${data['ឈ្មោះ']}')" class="shrink-0 w-10 h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center hover:bg-red-100 transition shadow-sm"><i class="fas fa-trash-alt"></i></button>`;
+                else action = `<div class="shrink-0 w-10 h-10 flex items-center justify-center text-slate-200"><i class="fas fa-ban"></i></div>`;
+            } else {
+                if(!hasImage) {
+                    action = `<button onclick="openCamera('${data.id}', '${data['ឈ្មោះ']}')" class="shrink-0 w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition shadow-md shadow-blue-200"><i class="fas fa-camera"></i></button>`;
+                } else {
+                    action = `<div class="shrink-0 w-8 h-8 flex items-center justify-center bg-green-500 text-white rounded-full shadow-sm shadow-green-200"><i class="fas fa-check text-xs"></i></div>`;
+                }
+            }
+
+            const imgBorder = hasImage ? "border-green-500" : "border-slate-200";
+            const idBadge = `<div class="inline-flex items-center bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md text-[10px] font-bold font-mono tracking-wide">#${data.id}</div>`;
+
+            div.innerHTML = `
+                <div class="relative shrink-0 cursor-pointer" onclick="${!hasImage && currentTab !== 'delete' ? `openCamera('${data.id}', '${data['ឈ្មោះ']}')` : ''}">
+                    <img src="${img}" class="w-14 h-14 rounded-full object-cover border-2 ${imgBorder} p-0.5">
+                </div>
+                <div class="flex-grow min-w-0">
+                    <h3 class="font-bold text-slate-800 text-base truncate" style="font-family: 'Battambang'">${data['ឈ្មោះ']||"Unknown"}</h3>
+                    <p class="text-xs text-slate-500 mb-2 truncate font-medium">${skill}</p>
+                    ${idBadge}
+                </div>
+                ${action}
+            `;
+            return div;
+        }
+
+        // CAMERA
+        function openCamera(id, name) { activeStudentId = id; activeStudentName = name; document.getElementById('cameraModal').classList.remove('hidden'); startCamera(); }
+        function startCamera() { navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(s => { videoStream = s; const v = document.getElementById('videoFeed'); if(v) { v.srcObject = s; applyMirror(); } }).catch(e=>alert(e)); }
+        function toggleMirror() { isMirrored = !isMirrored; applyMirror(); }
+        function applyMirror() { const v = document.getElementById('videoFeed'); if(v) { v.classList.toggle('mirror-active', isMirrored); v.classList.toggle('mirror-inactive', !isMirrored); } }
+        function closeCamera() { if(videoStream) videoStream.getTracks().forEach(t=>t.stop()); document.getElementById('cameraModal').classList.add('hidden'); }
+        
+        function capturePhoto() {
+            const v = document.getElementById('videoFeed'), c = document.getElementById('canvas');
+            if(!v) return;
+            const size = Math.min(v.videoWidth, v.videoHeight); c.width = size; c.height = size;
+            const ctx = c.getContext('2d');
+            if(isMirrored) { ctx.translate(size, 0); ctx.scale(-1, 1); }
+            ctx.drawImage(v, (v.videoWidth-size)/2, (v.videoHeight-size)/2, size, size, 0, 0, size, size);
+            capturedBlob = c.toDataURL('image/jpeg'); closeCamera();
+            document.getElementById('previewImage').src = capturedBlob; document.getElementById('previewModal').classList.remove('hidden');
+        }
+
+        function uploadPhoto() {
+            if(!capturedBlob) return;
+            document.getElementById('uploadingOverlay').classList.remove('hidden');
+            const fd = new FormData(); fd.append('file', capturedBlob); fd.append('upload_preset', CLOUDINARY_PRESET);
+            fetch(CLOUDINARY_URL, { method: 'POST', body: fd }).then(r=>r.json()).then(d=>{ if(d.secure_url) saveToDB(d.secure_url); }).catch(e=>{ alert("Upload Failed"); document.getElementById('uploadingOverlay').classList.add('hidden'); });
+        }
+        function saveToDB(url) {
+            db.ref('students/'+activeStudentId).update({'រូបថត': url}).then(()=>{
+                if(currentAdmin.verified) {
+                    db.ref('admin_logs').push({
+                        adminId: String(currentAdmin.id),
+                        adminName: currentAdmin.name,
+                        studentId: activeStudentId,
+                        studentName: activeStudentName, 
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+                document.getElementById('uploadingOverlay').classList.add('hidden');
+                document.getElementById('previewModal').classList.add('hidden');
+                document.getElementById('successModal').classList.remove('hidden');
+                setTimeout(()=>document.getElementById('successModal').classList.add('hidden'), 1500);
+                if(cachedAllData) { const idx = cachedAllData.findIndex(x=>x.id==activeStudentId); if(idx!==-1) cachedAllData[idx]['រូបថត']=url; }
+                processDataForTab(); 
             });
         }
+        function retakePhoto() { document.getElementById('previewModal').classList.add('hidden'); openCamera(activeStudentId, activeStudentName); }
+        function closePreview() { document.getElementById('previewModal').classList.add('hidden'); }
+
+        function confirmDeleteModal(id, name) { activeStudentId = id; document.getElementById('delStudentName').innerText = name; document.getElementById('deleteModal').classList.remove('hidden'); }
+        function closeDeleteModal() { document.getElementById('deleteModal').classList.add('hidden'); }
+        function confirmDelete() {
+            db.ref('students/'+activeStudentId).update({'រូបថត': ""}).then(()=>{
+                closeDeleteModal();
+                if(cachedAllData) { const idx = cachedAllData.findIndex(x=>x.id==activeStudentId); if(idx!==-1) cachedAllData[idx]['រូបថត']=""; }
+                processDataForTab(); 
+            });
+        }
+
+        function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        window.addEventListener('scroll', () => {
+            const btn = document.getElementById('backToTopBtn');
+            if(btn) {
+                if(window.scrollY > 300) { btn.classList.remove('hidden'); btn.classList.add('flex'); }
+                else { btn.classList.add('hidden'); btn.classList.remove('flex'); }
+            }
+        });
     </script>
 </body>
 </html>
