@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Profile & Camera</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Poppins:wght@300;400;600&display=swap');
+        body { font-family: 'Poppins', 'Battambang', sans-serif; background: #f3f4f6; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+        .loader { border-top-color: #3498db; -webkit-animation: spinner 1.5s linear infinite; animation: spinner 1.5s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-500 to-purple-600">
+
+    <div class="glass-card w-full max-w-md rounded-2xl p-6 relative overflow-hidden">
+        
+        <h1 class="text-2xl font-bold text-gray-800 text-center mb-6">Student Database</h1>
+
+        <div class="mb-6 relative">
+            <input type="text" id="searchInput" placeholder="Enter Student ID (e.g. 111)" 
+                class="w-full pl-4 pr-12 py-3 rounded-xl border-none outline-none focus:ring-2 focus:ring-blue-400 shadow-sm bg-gray-50 text-gray-700 font-bold transition-all">
+            <button onclick="searchStudent()" class="absolute right-2 top-2 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+
+        <div id="loading" class="hidden flex justify-center py-4">
+            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-8 w-8"></div>
+        </div>
+
+        <div id="profileCard" class="hidden transition-all duration-500 transform translate-y-4">
+            
+            <div class="flex justify-center mb-4 relative">
+                <div class="w-32 h-32 rounded-full border-4 border-white shadow-lg overflow-hidden relative bg-gray-200 group">
+                    <img id="displayImage" src="" alt="Profile" class="w-full h-full object-cover">
+                    
+                    <div id="cameraOverlay" class="absolute inset-0 bg-black bg-opacity-40 flex flex-col items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity hidden">
+                        <i class="fas fa-camera text-white text-2xl mb-1"></i>
+                        <span class="text-white text-xs">Tap to Add</span>
+                    </div>
+                </div>
+                <div id="statusBadge" class="absolute bottom-0 bg-green-500 text-white text-xs px-2 py-1 rounded-full shadow-md">
+                    Active
+                </div>
+            </div>
+
+            <div class="text-center space-y-2">
+                <h2 id="dispName" class="text-2xl font-bold text-gray-800">Student Name</h2>
+                <p class="text-sm text-gray-500 font-mono bg-gray-100 inline-block px-3 py-1 rounded-lg">ID: <span id="dispID">---</span></p>
+                <div class="mt-4">
+                    <span class="text-xs text-gray-400 uppercase tracking-wider">Skill / ជំនាញ</span>
+                    <p id="dispSkill" class="text-lg font-medium text-blue-600">---</p>
+                </div>
+            </div>
+
+            <button id="btnOpenCamera" onclick="openCameraModal()" class="w-full mt-6 bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all hidden">
+                <i class="fas fa-camera mr-2"></i> Take Photo
+            </button>
+        </div>
+
+        <div id="notFound" class="hidden text-center text-red-500 mt-4 font-semibold">
+            Student not found.
+        </div>
+    </div>
+
+    <div id="cameraModal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex flex-col items-center justify-center p-4">
+        <div class="relative w-full max-w-sm bg-black rounded-2xl overflow-hidden shadow-2xl border border-gray-700">
+            <video id="videoFeed" autoplay playsinline class="w-full h-64 object-cover transform -scale-x-100"></video>
+            <canvas id="canvas" class="hidden"></canvas>
+            
+            <div class="p-4 flex justify-around items-center bg-gray-900">
+                <button onclick="closeCamera()" class="text-white p-3 hover:text-red-400">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+                <button onclick="capturePhoto()" class="bg-white rounded-full p-1 border-4 border-gray-300 transition-transform active:scale-95">
+                    <div class="w-12 h-12 bg-red-500 rounded-full"></div>
+                </button>
+                <button class="text-gray-500 p-3">
+                    <i class="fas fa-sync text-xl"></i> </button>
+            </div>
+        </div>
+        <p class="text-white mt-4 text-sm animate-pulse">Align face and tap button</p>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script>
+        // --- 1. CONFIGURATION ---
+        
+        // YOUR FIREBASE CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyAc2g-t9A7du3K_nI2fJnw_OGxhmLfpP6s",
+            authDomain: "dilistname.firebaseapp.com",
+            databaseURL: "https://dilistname-default-rtdb.firebaseio.com",
+            projectId: "dilistname",
+            storageBucket: "dilistname.firebasestorage.app",
+            messagingSenderId: "897983357871",
+            appId: "1:897983357871:web:42a046bc9fb3e0543dc55a",
+            measurementId: "G-NQ798D9J6K"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // YOUR CLOUDINARY CONFIG (REPLACE THESE!)
+        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME_HERE/image/upload";
+        const CLOUDINARY_UPLOAD_PRESET = "YOUR_UNSIGNED_PRESET_HERE"; 
+
+        // --- 2. VARIABLES ---
+        let currentStudentId = null;
+        const video = document.getElementById('videoFeed');
+        const canvas = document.getElementById('canvas');
+        const defaultImage = "https://via.placeholder.com/150?text=n/a"; // n/a placeholder
+
+        // --- 3. SEARCH FUNCTION ---
+        function searchStudent() {
+            const id = document.getElementById('searchInput').value.trim();
+            if(!id) return alert("Please enter an ID");
+
+            // UI Reset
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('profileCard').classList.add('hidden');
+            document.getElementById('notFound').classList.add('hidden');
+
+            // Fetch from Firebase: students/{id}
+            db.ref('students/' + id).once('value').then((snapshot) => {
+                document.getElementById('loading').classList.add('hidden');
+                
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    currentStudentId = id; // Save ID for later update
+                    renderProfile(data);
+                } else {
+                    document.getElementById('notFound').classList.remove('hidden');
+                }
+            }).catch(error => {
+                console.error(error);
+                alert("Error connecting to database");
+                document.getElementById('loading').classList.add('hidden');
+            });
+        }
+
+        // --- 4. RENDER UI ---
+        function renderProfile(data) {
+            // Map Data (Khmer Fields)
+            document.getElementById('dispName').innerText = data['ឈ្មោះ'] || "Unknown";
+            document.getElementById('dispID').innerText = data['អត្តលេខ'] || currentStudentId;
+            document.getElementById('dispSkill').innerText = data['ជំនាញ'] || "General";
+
+            const imgUrl = data['រូបថត'];
+            const imgEl = document.getElementById('displayImage');
+            const btnCam = document.getElementById('btnOpenCamera');
+            const overlay = document.getElementById('cameraOverlay');
+
+            // Logic: If image exists, show it and hide camera button. If not, show n/a and show button.
+            if (imgUrl && imgUrl !== "n/a" && imgUrl !== "") {
+                imgEl.src = imgUrl;
+                btnCam.classList.add('hidden'); // Hide button
+                overlay.classList.add('hidden'); // Hide hover effect
+            } else {
+                imgEl.src = defaultImage;
+                btnCam.classList.remove('hidden'); // Show Capture Button
+                overlay.classList.remove('hidden'); // Enable hover effect
+            }
+
+            document.getElementById('profileCard').classList.remove('hidden');
+        }
+
+        // --- 5. CAMERA LOGIC ---
+        function openCameraModal() {
+            document.getElementById('cameraModal').classList.remove('hidden');
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(stream => {
+                    video.srcObject = stream;
+                })
+                .catch(err => {
+                    alert("Camera access denied or not available");
+                    closeCamera();
+                });
+        }
+
+        function closeCamera() {
+            const stream = video.srcObject;
+            if (stream) {
+                const tracks = stream.getTracks();
+                tracks.forEach(track => track.stop());
+            }
+            document.getElementById('cameraModal').classList.add('hidden');
+        }
+
+        // --- 6. CAPTURE & UPLOAD (The Magic) ---
+        function capturePhoto() {
+            // 1. Draw video frame to canvas
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // 2. Convert to Base64
+            const dataUrl = canvas.toDataURL('image/jpeg');
+
+            // 3. Stop Camera & Show Loading State
+            closeCamera();
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('profileCard').classList.add('hidden');
+
+            // 4. Upload to Cloudinary
+            uploadToCloudinary(dataUrl);
+        }
+
+        function uploadToCloudinary(base64Image) {
+            const formData = new FormData();
+            formData.append('file', base64Image);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+            fetch(CLOUDINARY_URL, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.secure_url) {
+                    updateFirebase(data.secure_url);
+                } else {
+                    alert("Upload failed");
+                    document.getElementById('loading').classList.add('hidden');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Error uploading image");
+                document.getElementById('loading').classList.add('hidden');
+            });
+        }
+
+        // --- 7. UPDATE FIREBASE ---
+        function updateFirebase(newImageUrl) {
+            db.ref('students/' + currentStudentId).update({
+                'រូបថត': newImageUrl
+            }).then(() => {
+                // Success! Refresh the view
+                alert("Photo saved successfully!");
+                searchStudent(); // Reload data
+            }).catch(error => {
+                alert("Failed to update database");
+            });
+        }
+    </script>
+</body>
+</html>
